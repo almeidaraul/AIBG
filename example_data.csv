@@ -1,4 +1,4 @@
-Data,Tag,Glicemia,Insulina aplicada,Carboidrato,Proteina,Gordura,Extra
+date,tags,blood_glucose,applied_insulin,carbohydrates,proteins,fat,extra
 18.1.2019.15.1,pós almoço,144,1,0,0,0,
 18.1.2019.13.10,pré almoço,145,4,28.4,25.5,9.3,
 18.1.2019.1.20,lanche,105,1,26,3.5,3.5,
