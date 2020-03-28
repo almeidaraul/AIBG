@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 class Explorer():
-    def __init__(self, dataframe, lower_bound=70, upper_bound=180, interval=None):
+    def __init__(self, dataframe, lower_bound=70, upper_bound=180, interval=("'1990'", "'2049'")):
         self.df = dataframe
         self.lo = lower_bound
         self.up = upper_bound
@@ -15,41 +15,75 @@ class Explorer():
             self.lo = lo
         if up:
             self.up = up
-        if interval:
-            self.interval = interval
+        if interval[0]:
+            self.interval[0] = interval[0]
+        if interval[1]:
+            self.interval[1] = interval[1]
+
+    def bg_count(self):
+        """number of non-null blood glucose registries"""
+        return self.df.bg.count()
+
+    def inside_interval(self):
+        """returns dataframe of registries inside self.interval"""
+        return self.df[
+                self.date >= self.interval[0] and
+                self.date <= self.interval[1]
+                ].count()
 
     def bg_avg(self):
         """average blood glucose inside interval"""
-        pass
+        return self.df.bg.mean()
 
     def bg_stddev(self):
         """std deviation for blood glucose in given interval"""
-        pass
+        return self.df.bg.std()
 
     def time_in_range(self):
         """% of bg in given interval that is inside range given by
         lower and upper bound"""
-        pass
+        # TODO: rename blood_glucose in example data to bg
+        in_range = self.df.bg[
+                    self.df.bg >= self.df.lo and 
+                    self.df.bg <= self.df.up and
+                    self.inside_interval()
+                    ].count()
+        return in_range*100/self.bg_count()
 
     def time_above_range(self):
         """% of bg in given interval that is above upper bound"""
-        pass
+        above_range = self.df.bg[
+                        self.df.bg > self.up and
+                        self.inside_interval()
+                        ].count()
+        return above_range*100/self.bg_count()
 
     def time_below_range(self):
         """% of bg in given interval that is below upper bound"""
-        pass
+        below_range = self.df.bg[
+                        self.df.bg < self.lo and
+                        self.inside_interval()
+                        ].count()
+        return below_range*100/self.bg_count()
 
-    def in_range_count(self):
+    def in_range(self):
         """number of registries in range"""
-        pass
+        return self.df.bg[
+                self.df.bg <= self.up and
+                self.df.bg >= self.lo and
+                self.df.inside_interval()].count()
 
-    def above_range_count(self):
+    def above_range(self):
         """number of registries above range"""
-        pass
+        return self.df.bg[
+                self.df.bg > self.up and
+                self.df.inside_interval()].count()
 
-    def below_range_count(self):
+    def below_range(self):
         """registries below range"""
-        pass
+        return self.df.bg[
+                self.df.bg < self.lo and
+                self.df.inside_interval()].count()
 
     def HbA1c(self):
         """glycated hemoglobin"""
