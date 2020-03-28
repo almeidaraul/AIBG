@@ -87,4 +87,5 @@ class Explorer():
 
     def HbA1c(self):
         """glycated hemoglobin"""
-        pass
+        avg_bg = self.bg_avg # TODO: make this last 3 months' avg
+        return (avg_bg+46.7)/28.7
