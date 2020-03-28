@@ -4,8 +4,8 @@ import datetime as dt
 
 class Explorer():
     def __init__(self, df, lo=70, up=180, 
-            begin_date=dt.datetime(1700, 1, 1, 0, 0), 
-            end_date=dt.datetime(2200, 1, 1, 0, 0):
+                begin_date=dt.datetime(1700, 1, 1, 0, 0), 
+                end_date=dt.datetime(2200, 1, 1, 0, 0)):
         """ df: dataframe with all the data this explorer needs
             lo: lower bound for bg care analysis
             up: upper bound for bg care analysis
@@ -37,16 +37,16 @@ class Explorer():
 
     def interval_filter(self):
         """returns dataframe of registries inside self.interval"""
-        return self.df.date >= self.begin_date and
-                self.df.date <= self.end_date
+        return (self.df.date >= self.begin_date and
+                self.df.date <= self.end_date)
 
     def meal_filter(self, meal='all', moment='before'):
         """returns boolean dataframe of registries of
         meals based on filters given as parameters
         moments: before, after, all
         meals: snack, breakfast, lunch, dinner, all"""
-        meals = ['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
-                else [meal]
+        meals = (['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
+                else [meal])
         if moment == 'before':
             meals = ['before_'+meal for meal in meals]
         elif moment == 'all':
@@ -75,8 +75,8 @@ class Explorer():
         elif region == 'above':
             region_df = self.df.bg[self.df.bg > self.up]
         else:
-            region_df = self.df.bg[self.df.bg >= self.lo and
-                                    self.df.bg <= self.up]
+            region_df = (self.df.bg[self.df.bg >= self.lo and
+                                    self.df.bg <= self.up])
 
         region_df = region_df[self.interval_filter()]
 
@@ -89,7 +89,7 @@ class Explorer():
         """glycated hemoglobin starting 3 months before up_until and ending at
         up_until; if up_until == None, calculates HbA1c starting 3 months 
         from today"""
-        avg_bg = self.df.bg[self.df.date >= 
+        avg_bg = (self.df.bg[self.df.date >= 
                 (up_until if up_until else dt.datetime.now()) - 
-                pd.DateOffset(months=3)].mean()
+                pd.DateOffset(months=3)].mean())
         return (avg_bg+46.7)/28.7
