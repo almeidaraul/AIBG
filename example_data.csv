@@ -1,10 +1,9 @@
-date,tags,blood_glucose,applied_insulin,carbohydrates,proteins,fat,extra
-18.1.2019.15.1,pós almoço,144,1,0,0,0,
-18.1.2019.13.10,pré almoço,145,4,28.4,25.5,9.3,
-18.1.2019.1.20,lanche,105,1,26,3.5,3.5,
-17.1.2019.4.30,ao dormir,164,0,0,0,0,
-17.1.2019.20.57,lanche,202,10,61.5,48.9,76.8,
-17.1.2019.23.6,pós lanche,92,0,0,0,0,
-17.1.2019.19.52,pré jantar,209,6,36.5,16,7.6,
-17.1.2019.14.16,lanche,241,10,80,0,0,
-17.1.2019.12.34,almoço,169,4,62.4,14.7,7.4,
+date,tags,bg,applied_insulin,carbohydrates,proteins,fat,extra
+2020-03-27 21:30,after_dinner,108,0,0,0,0,
+2020-03-27 19:18,before_dinner,198,5,30.9,13.8,7.2,
+2020-03-27 16:49,snack,139,4,45,0,0,
+2020-03-27 15:21,,121,0,0,0,0,
+2020-03-27 14:47,snack,82,0,14,0,0,feeling low bg
+2020-03-27 13:43,lunch after_exercise,87,1,30.9,13.8,7.2,
+2020-03-27 12:08,after_breakfast before_exercise,210,4,0,0,0,
+2020-03-27 10:35,before_breakfast,103,3,45,0,0,
