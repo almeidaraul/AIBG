@@ -3,86 +3,82 @@ import numpy as np
 import dates
 
 class Explorer():
-    def __init__(self, dataframe, lower_bound=70, upper_bound=180, interval=("'1990'", "'2049'")):
-        self.df = dataframe
-        self.lo = lower_bound
-        self.up = upper_bound
-        self.interval = interval
+    def __init__(self, df, lo=70, up=180, begin_date='1990', end_date='2049'):
+        """ df: dataframe with all the data this explorer needs
+            lo: lower bound for bg care analysis
+            up: upper bound for bg care analysis
+            begin_date: begin date for studied interval
+            end_date: end date for studied interval
+        """
+        # TODO: make {begin, end}_date paramaters be actual dates, not strings
+        self.df = df
+        self.lo = lo
+        self.up = up
+        self.begin_date = begin_date
+        self.end_date = end_date
 
-    def edit(df=None, lo=None, up=None, interval=None):
+    def update(df=None, lo=None, up=None, begin_date=None, end_date=None):
+        """update attributes in our explorer object"""
         if df:
             self.df = df
         if lo:
             self.lo = lo
         if up:
             self.up = up
-        if interval[0]:
-            self.interval[0] = interval[0]
-        if interval[1]:
-            self.interval[1] = interval[1]
+        if begin_date:
+            self.begin_date = begin_date
+        if end_date:
+            self.end_date = end_date
 
     def bg_count(self):
         """number of non-null blood glucose registries"""
         return self.df.bg.count()
 
-    def inside_interval(self):
+    def interval_filter(self):
         """returns dataframe of registries inside self.interval"""
-        return self.date >= self.interval[0] and
-                self.date <= self.interval[1]
+        return self.df.date >= self.begin_date and
+                self.df.date <= self.end_date
 
-    def bg_avg(self):
-        """average blood glucose inside interval"""
-        return self.df.bg.mean()
+    def meal_filter(self, meal='all', moment='before'):
+        """returns boolean dataframe of registries of
+        meals based on filters given as parameters
+        moments: before, after, all
+        meals: snack, breakfast, lunch, dinner, all"""
+        return 'snack' in self.df.tags and
+                'dinner' in self.df.tags and
+                'lunch' in self.df.tags and
+                'breakfast' in self.df.tags
 
-    def bg_stddev(self):
-        """std deviation for blood glucose in given interval"""
-        return self.df.bg.std()
+    def basic_stats(self, column, op, meal=None, moment=None):
+        if not meal:
+            filtered_df = self.df[column]
+        else:
+            filtered_df = self.df[column][self.meal_filter(meal, moment)]
 
-    def time_in_range(self):
-        """% of bg in given interval that is inside range given by
-        lower and upper bound"""
-        # TODO: rename blood_glucose in example data to bg
-        in_range = self.df.bg[
-                    self.df.bg >= self.df.lo and 
-                    self.df.bg <= self.df.up and
-                    self.inside_interval()
-                    ].count()
-        return in_range*100/self.bg_count()
+        if op == 'cumsum': #cumulative sum
+            return filtered_df.sum()
+        elif op == 'avg':
+            return filtered_df.mean()
+        elif op == 'std': #std deviation
+            return filtered_df.std()
 
-    def time_above_range(self):
-        """% of bg in given interval that is above upper bound"""
-        above_range = self.df.bg[
-                        self.df.bg > self.up and
-                        self.inside_interval()
-                        ].count()
-        return above_range*100/self.bg_count()
+    def range_time(self, region='in', count=False):
+        """% of bg in, above or below range
+        region: below, above, in"""
+        if region == 'below':
+            region_df = self.df.bg[self.df.bg < self.lo]
+        elif region == 'above':
+            region_df = self.df.bg[self.df.bg > self.up]
+        else:
+            region_df = self.df.bg[self.df.bg >= self.lo and
+                                    self.df.bg <= self.up]
 
-    def time_below_range(self):
-        """% of bg in given interval that is below upper bound"""
-        below_range = self.df.bg[
-                        self.df.bg < self.lo and
-                        self.inside_interval()
-                        ].count()
-        return below_range*100/self.bg_count()
+        region_df = region_df[self.interval_filter()]
 
-    def in_range(self):
-        """number of registries in range"""
-        return self.df.bg[
-                self.df.bg <= self.up and
-                self.df.bg >= self.lo and
-                self.df.inside_interval()].count()
-
-    def above_range(self):
-        """number of registries above range"""
-        return self.df.bg[
-                self.df.bg > self.up and
-                self.df.inside_interval()].count()
-
-    def below_range(self):
-        """registries below range"""
-        return self.df.bg[
-                self.df.bg < self.lo and
-                self.df.inside_interval()].count()
+        if count:
+            return region_df.count()
+        else:
+            return region_df.count()*100/self.df.bg.count()
 
     def HbA1c(self):
         """glycated hemoglobin"""
