@@ -3,14 +3,15 @@ import numpy as np
 import datetime as dt
 
 class Explorer():
-    def __init__(self, df, lo=70, up=180, begin_date='1990', end_date='2049'):
+    def __init__(self, df, lo=70, up=180, 
+            begin_date=dt.datetime(1700, 1, 1, 0, 0), 
+            end_date=dt.datetime(2200, 1, 1, 0, 0):
         """ df: dataframe with all the data this explorer needs
             lo: lower bound for bg care analysis
             up: upper bound for bg care analysis
             begin_date: begin date for studied interval
             end_date: end date for studied interval
         """
-        # TODO: make {begin, end}_date paramaters be actual dates, not strings
         self.df = df
         self.lo = lo
         self.up = up
@@ -84,9 +85,11 @@ class Explorer():
         else:
             return region_df.count()*100/self.df.bg.count()
 
-    def HbA1c(self):
-        """glycated hemoglobin"""
-        avg_bg = self.df.bg[
-                self.df.date >= dt.datetime.now()-pd.DateOffset(months=3)
-                ].mean()
+    def HbA1c(self, up_until=None):
+        """glycated hemoglobin starting 3 months before up_until and ending at
+        up_until; if up_until == None, calculates HbA1c starting 3 months 
+        from today"""
+        avg_bg = self.df.bg[self.df.date >= 
+                (up_until if up_until else dt.datetime.now()) - 
+                pd.DateOffset(months=3)].mean()
         return (avg_bg+46.7)/28.7
