@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import dates
 
 class Explorer():
     def __init__(self, dataframe, lower_bound=70, upper_bound=180, interval=("'1990'", "'2049'")):
@@ -26,10 +27,8 @@ class Explorer():
 
     def inside_interval(self):
         """returns dataframe of registries inside self.interval"""
-        return self.df[
-                self.date >= self.interval[0] and
+        return self.date >= self.interval[0] and
                 self.date <= self.interval[1]
-                ].count()
 
     def bg_avg(self):
         """average blood glucose inside interval"""
