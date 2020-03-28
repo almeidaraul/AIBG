@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import dates
+import datetime as dt
 
 class Explorer():
     def __init__(self, df, lo=70, up=180, begin_date='1990', end_date='2049'):
@@ -44,10 +44,14 @@ class Explorer():
         meals based on filters given as parameters
         moments: before, after, all
         meals: snack, breakfast, lunch, dinner, all"""
-        return 'snack' in self.df.tags and
-                'dinner' in self.df.tags and
-                'lunch' in self.df.tags and
-                'breakfast' in self.df.tags
+        meals = ['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
+                else [meal]
+        if moment == 'before':
+            meals = ['before_'+meal for meal in meals]
+        elif moment == 'all':
+            meals += ['before_'+meal for meal in meals] 
+
+        return len(set(self.df.tags.split(' ')).intersection(meals)) > 0
 
     def basic_stats(self, column, op, meal=None, moment=None):
         if not meal:
@@ -82,5 +86,7 @@ class Explorer():
 
     def HbA1c(self):
         """glycated hemoglobin"""
-        avg_bg = self.bg_avg # TODO: make this last 3 months' avg
+        avg_bg = self.df.bg[
+                self.df.date >= dt.datetime.now()-pd.DateOffset(months=3)
+                ].mean()
         return (avg_bg+46.7)/28.7
