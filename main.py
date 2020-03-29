@@ -16,3 +16,4 @@ print(ex.basic_stats('bg', 'avg', 'snack', 'before'),
     " +- ", ex.basic_stats('bg', 'std', 'snack', 'before'))
 print(ex.HbA1c())
 print(ex.range_time())
+ex.plot_range_time(out=None)
