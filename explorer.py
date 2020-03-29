@@ -1,11 +1,11 @@
+import datetime as dt
 import pandas as pd
 import numpy as np
-import datetime as dt
 
 class Explorer():
     def __init__(self, df, lo=70, up=180, 
-                begin_date=dt.datetime(1700, 1, 1, 0, 0), 
-                end_date=dt.datetime(2200, 1, 1, 0, 0)):
+            begin_date=dt.datetime(1700, 1, 1, 0, 0), 
+            end_date=dt.datetime(2200, 1, 1, 0, 0)):
         """ df: dataframe with all the data this explorer needs
             lo: lower bound for bg care analysis
             up: upper bound for bg care analysis
@@ -19,7 +19,7 @@ class Explorer():
         self.end_date = end_date
 
     def update(df=None, lo=None, up=None, begin_date=None, end_date=None):
-        """update attributes in our explorer object"""
+        """Update attributes in our explorer object"""
         if df:
             self.df = df
         if lo:
@@ -32,36 +32,42 @@ class Explorer():
             self.end_date = end_date
 
     def bg_count(self):
-        """number of non-null blood glucose registries"""
+        """Number of non-null blood glucose registries"""
         return self.df.bg.count()
 
     def interval_filter(self):
-        """returns dataframe of registries inside self.interval"""
+        """Returns dataframe of registries inside self.interval"""
         return ((self.df.date >= self.begin_date) &
-                (self.df.date <= self.end_date))
+            (self.df.date <= self.end_date))
 
     def meal_filter(self, meal='all', moment='before'):
-        """returns boolean dataframe of registries of
-        meals based on filters given as parameters
+        """Returns boolean dataframe of registries of
+        meals based on filters given as parameters.
+
         moments: before, after, all
-        meals: snack, breakfast, lunch, dinner, all"""
-        meals = (
-                ['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
+
+        meals: snack, breakfast, lunch, dinner, all
+        """
+        meals = (['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
                 else [meal])
 
-        if moment == 'after': # before_x is stored just as x
+        if moment == 'after':
             meals = ['after_'+meal for meal in meals]
         elif moment == 'all':
             meals += ['after_'+meal for meal in meals] 
 
+        # The lambda function defined below will return True for any tag that
+        # intersects with the meals variable.
         return self.df.tags.apply(
-            lambda x : 
-            len([meal for meal in meals if meal in x]) > 0 
-            if isinstance(x, str) 
-            else False
-            )
+            lambda tag : 
+            len([m for m in meals if m in tag]) > 0 if isinstance(x, str) 
+            else False)
 
     def basic_stats(self, column, op, meal=None, moment=None):
+        """Basic stats should handle any operation that depends only
+        on a row's value (not on next row, or on a group of rows) and
+        uses this class' standard interval and meal filters.
+        """
         if not meal:
             filtered_df = self.df[column]
         else:
@@ -75,15 +81,18 @@ class Explorer():
             return filtered_df.std()
 
     def range_time(self, region='in', count=False):
-        """% of bg in, above or below range
-        region: below, above, in"""
+        """Percentage (our count) of registries with bg in, above or below
+        range.
+
+        region: below, above, in
+        """
         if region == 'below':
             region_df = self.df.bg[self.df.bg < self.lo]
         elif region == 'above':
             region_df = self.df.bg[self.df.bg > self.up]
         else:
             region_df = (self.df.bg[(self.df.bg >= self.lo)
-                                    & (self.df.bg <= self.up)])
+                & (self.df.bg <= self.up)])
 
         region_df = region_df[self.interval_filter()]
 
@@ -93,10 +102,16 @@ class Explorer():
             return region_df.count()*100/self.df.bg.count()
 
     def HbA1c(self, up_until=None):
-        """glycated hemoglobin starting 3 months before up_until and ending at
-        up_until; if up_until == None, calculates HbA1c starting 3 months 
-        from today"""
-        avg_bg = (self.df.bg[self.df.date >= 
-                (up_until if up_until else dt.datetime.now()) - 
-                pd.DateOffset(months=3)].mean())
+        """Glycated hemoglobin starting 3 months before up_until and ending at
+        up_until.
+
+        If up_until == None, calculates HbA1c starting 3 months from today.
+        """
+        if up_until:
+            start_date = up_until
+        else:
+            start_date = dt.datetime.now()
+        start_date -= pd.DateOffset(months=3)
+
+        avg_bg = self.df.bg[self.df.date >= start_date].mean()
         return (avg_bg+46.7)/28.7
