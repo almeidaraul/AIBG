@@ -1,9 +1,9 @@
 date,tags,bg,applied_insulin,carbohydrates,proteins,fat,extra
 2020-03-27 21:30,after_dinner,108,0,0,0,0,
-2020-03-27 19:18,before_dinner,198,5,30.9,13.8,7.2,
+2020-03-27 19:18,dinner,198,5,30.9,13.8,7.2,
 2020-03-27 16:49,snack,139,4,45,0,0,
 2020-03-27 15:21,,121,0,0,0,0,
 2020-03-27 14:47,snack,82,0,14,0,0,feeling low bg
 2020-03-27 13:43,lunch after_exercise,87,1,30.9,13.8,7.2,
-2020-03-27 12:08,after_breakfast before_exercise,210,4,0,0,0,
-2020-03-27 10:35,before_breakfast,103,3,45,0,0,
+2020-03-27 12:08,after_breakfast exercise,210,4,0,0,0,
+2020-03-27 10:35,breakfast,103,3,45,0,0,
