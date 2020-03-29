@@ -37,22 +37,29 @@ class Explorer():
 
     def interval_filter(self):
         """returns dataframe of registries inside self.interval"""
-        return (self.df.date >= self.begin_date and
-                self.df.date <= self.end_date)
+        return ((self.df.date >= self.begin_date) &
+                (self.df.date <= self.end_date))
 
     def meal_filter(self, meal='all', moment='before'):
         """returns boolean dataframe of registries of
         meals based on filters given as parameters
         moments: before, after, all
         meals: snack, breakfast, lunch, dinner, all"""
-        meals = (['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
+        meals = (
+                ['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
                 else [meal])
-        if moment == 'before':
-            meals = ['before_'+meal for meal in meals]
-        elif moment == 'all':
-            meals += ['before_'+meal for meal in meals] 
 
-        return len(set(self.df.tags.split(' ')).intersection(meals)) > 0
+        if moment == 'after': # before_x is stored just as x
+            meals = ['after_'+meal for meal in meals]
+        elif moment == 'all':
+            meals += ['after_'+meal for meal in meals] 
+
+        return self.df.tags.apply(
+            lambda x : 
+            len([meal for meal in meals if meal in x]) > 0 
+            if isinstance(x, str) 
+            else False
+            )
 
     def basic_stats(self, column, op, meal=None, moment=None):
         if not meal:
@@ -75,8 +82,8 @@ class Explorer():
         elif region == 'above':
             region_df = self.df.bg[self.df.bg > self.up]
         else:
-            region_df = (self.df.bg[self.df.bg >= self.lo and
-                                    self.df.bg <= self.up])
+            region_df = (self.df.bg[(self.df.bg >= self.lo)
+                                    & (self.df.bg <= self.up)])
 
         region_df = region_df[self.interval_filter()]
 
