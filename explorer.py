@@ -1,6 +1,7 @@
 import datetime as dt
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Explorer():
     def __init__(self, df, lo=70, up=180, 
@@ -60,7 +61,7 @@ class Explorer():
         # intersects with the meals variable.
         return self.df.tags.apply(
             lambda tag : 
-            len([m for m in meals if m in tag]) > 0 if isinstance(x, str) 
+            len([m for m in meals if m in tag]) > 0 if isinstance(tag, str) 
             else False)
 
     def basic_stats(self, column, op, meal=None, moment=None):
@@ -115,3 +116,28 @@ class Explorer():
 
         avg_bg = self.df.bg[self.df.date >= start_date].mean()
         return (avg_bg+46.7)/28.7
+
+    def plot_range_time(self, out='tir.png'):
+        """Plot time in range as pie chart.
+        By default, saves output to 'tir.png'
+        """
+        in_range = self.range_time('in')
+        above_range = self.range_time('above')
+        below_range = self.range_time('below')
+
+        labels = ['In range ({}%)'.format(int(in_range)),
+                'Above range({}%)'.format(int(above_range)),
+                'Below range({}%)'.format(int(below_range))]
+
+        sizes = [in_range, above_range, below_range]
+        colors = ['mediumseagreen', 'gold', 'orangered']
+
+        plt.pie(sizes, labels=labels, colors=colors)
+        plt.axis('equal')
+        if out:
+            plt.savefig(out)
+        else:
+            plt.show()
+
+
+
