@@ -138,6 +138,43 @@ class Explorer():
             plt.savefig(out)
         else:
             plt.show()
-
-
+    
+    def report(self):
+        """Give a report"""
+        print("BLOOD GLUCOSE")
+        print("Mean and std deviation: {} ({})".format(
+            self.basic_stats('bg', 'avg'),
+            self.basic_stats('bg', 'std')))
+        print("Time in range: {}%".format(self.range_time('in')))
+        print("Time below range: {}%".format(self.range_time('below')))
+        print("Time above range: {}%".format(self.range_time('above')))
+        print("Mean and std deviation before all meals: {} ({})".format(
+            self.basic_stats('bg', 'avg', 'all', 'before'),
+            self.basic_stats('bg', 'std', 'all', 'before')))
+        print("Mean and std deviation after all meals: {} ({})".format(
+            self.basic_stats('bg', 'avg', 'all', 'after'),
+            self.basic_stats('bg', 'std', 'all', 'after')))
+        print("HbA1c: ", self.HbA1c())
+        print("INSULIN")
+        print("Total used: {}u".format(
+            self.basic_stats('applied_insulin', 'cumsum')))
+        print("Average (and std deviation) for use before any meal: ",
+            "{} ({})u".format(
+            self.basic_stats('applied_insulin', 'avg', 'all', 'before'),
+            self.basic_stats('applied_insulin', 'std', 'all', 'before')))
+        print("Average (and std deviation) for use after any meal: {} ({})u".format(
+            self.basic_stats('applied_insulin', 'avg', 'all', 'after'),
+            self.basic_stats('applied_insulin', 'std', 'all', 'after')))
+        print("Average (and std deviation) for general use: {} ({})u".format(
+            self.basic_stats('applied_insulin', 'avg'),
+            self.basic_stats('applied_insulin', 'std')))
+        print("CARBOHYDRATES - Average and std deviation: {} ({})".format(
+            self.basic_stats('carbohydrates', 'avg'),
+            self.basic_stats('carbohydrates', 'std')))
+        print("PROTEINS - Average and std deviation: {} ({})".format(
+            self.basic_stats('proteins', 'avg'),
+            self.basic_stats('proteins', 'std')))
+        print("FAT - Average and std deviation: {} ({})".format(
+            self.basic_stats('fat', 'avg'),
+            self.basic_stats('fat', 'std')))
 
