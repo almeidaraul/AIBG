@@ -84,13 +84,8 @@ class Explorer():
         if operate_on_cumsum == 'per_day':
             filtered_df = filtered_df.groupby(filtered_df.date.dt.normalize()).sum()
         elif operate_on_cumsum == 'per_week':
-            #TODO: check if this actually works
-            filtered_df = filtered_df.groupby(
-                filtered_df.date.dt.strftime('%W')).sum()
+            pass
         elif operate_on_cumsum == 'per_month':
-            #TODO: check if this doesn't consider all aprils to be the same
-            filtered_df = filtered_df.groupby(
-                filtered_df.date.dt.strftime('%m')).sum()
             pass
 
         filtered_df = filtered_df[column]
