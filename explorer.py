@@ -64,16 +64,29 @@ class Explorer():
             len([m for m in meals if m in tag]) > 0 if isinstance(tag, str) 
             else False)
 
-    def basic_stats(self, column, op, meal=None, moment=None):
+    def basic_stats(self, column, op, meal=None, moment=None,
+            operate_on_cumsum=None):
         """Basic stats should handle any operation that depends only
         on a row's value (not on next row, or on a group of rows) and
         uses this class' standard interval and meal filters.
         """
         if not meal:
-            filtered_df = self.df[column]
+            filtered_df = self.df
         else:
-            filtered_df = self.df[column][self.meal_filter(meal, moment)]
+            filtered_df = self.df[self.meal_filter(meal, moment)]
 
+        # todo: function to group by anything
+        if operate_on_cumsum == 'per_day':
+            # group by day
+            filtered_df = filtered_df.groupby(filtered_df.date.dt.normalize()).sum()
+        elif operate_on_cumsum == 'per_week':
+            # group by week
+            pass
+        elif operate_on_cumsum == 'per_month':
+            # group by month
+            pass
+
+        filtered_df = filtered_df[column]
         if op == 'cumsum': #cumulative sum
             return filtered_df.sum()
         elif op == 'avg':
@@ -177,4 +190,7 @@ class Explorer():
         print("FAT - Average and std deviation: {} ({})".format(
             self.basic_stats('fat', 'avg'),
             self.basic_stats('fat', 'std')))
+        print("Insulin average per day: {}".format(
+            self.basic_stats('applied_insulin', 'avg',
+                operate_on_cumsum='per_day')))
 
