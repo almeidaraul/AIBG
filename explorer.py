@@ -80,15 +80,17 @@ class Explorer():
         else:
             filtered_df = self.df[self.meal_filter(meal, moment)]
 
-        # todo: function to group by anything
+        # TODO: function to group by anything
         if operate_on_cumsum == 'per_day':
-            # group by day
             filtered_df = filtered_df.groupby(filtered_df.date.dt.normalize()).sum()
         elif operate_on_cumsum == 'per_week':
-            # group by week
-            pass
+            #TODO: check if this actually works
+            filtered_df = filtered_df.groupby(
+                filtered_df.date.dt.strftime('%W')).sum()
         elif operate_on_cumsum == 'per_month':
-            # group by month
+            #TODO: check if this doesn't consider all aprils to be the same
+            filtered_df = filtered_df.groupby(
+                filtered_df.date.dt.strftime('%m')).sum()
             pass
 
         filtered_df = filtered_df[column]
