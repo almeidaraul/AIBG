@@ -1,3 +1,4 @@
+import operator
 import datetime as dt
 import pandas as pd
 import numpy as np
@@ -47,22 +48,26 @@ class Explorer():
 
         moments: before, after, all
 
-        meals: snack, breakfast, lunch, dinner, all
+        meals: snack, breakfast, lunch, dinner, all, no_meal
+
+        if filtering for meals='no_meal', this algorithm works the same way as if
+        meals='all', except it returns the opposite boolean value for each cell
         """
-        meals = (['snack', 'dinner', 'lunch', 'breakfast'] if meal == 'all'
+        meals = (['snack', 'dinner', 'lunch', 'breakfast']
+                if meal in 'all no_meal'
                 else [meal])
 
         if moment == 'after':
             meals = ['after_'+meal for meal in meals]
-        elif moment == 'all':
+        elif moment == 'all' or meal == 'no_meal':
             meals += ['after_'+meal for meal in meals] 
 
-        # The lambda function defined below will return True for any tag that
-        # intersects with the meals variable.
-        return self.df.tags.apply(
-            lambda tag : 
-            len([m for m in meals if m in tag]) > 0 if isinstance(tag, str) 
-            else False)
+        # test for intersection with meals
+        sel = operator.eq if meal == 'no_meal' else operator.gt
+        return self.df.tags.apply(lambda tag :
+            sel(len([m for m in meals if m in tag]), 0)
+            if isinstance(tag, str)
+            else sel == operator.eq)
 
     def basic_stats(self, column, op, meal=None, moment=None,
             operate_on_cumsum=None):
@@ -193,4 +198,6 @@ class Explorer():
         print("Insulin average per day: {}".format(
             self.basic_stats('applied_insulin', 'avg',
                 operate_on_cumsum='per_day')))
+        print("Insulin average when no meal registered: {}".format(
+            self.basic_stats('applied_insulin', 'avg', meal='no_meal')))
 
