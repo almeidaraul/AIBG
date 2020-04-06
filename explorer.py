@@ -70,7 +70,7 @@ class Explorer():
             else sel == operator.eq)
 
     def basic_stats(self, column, op, meal=None, moment=None,
-            operate_on_cumsum=None):
+            operate_on_cumsum=None, operate_on_variation=None)
         """Basic stats should handle any operation that depends only
         on a row's value (not on next row, or on a group of rows) and
         uses this class' standard interval and meal filters.
@@ -89,6 +89,11 @@ class Explorer():
             pass
         elif operate_on_cumsum == 'per_month':
             # group by month
+            pass
+
+        if operate_on_variation:
+            # filter out any row that isn't followed by an after_
+            # for one of its tags
             pass
 
         filtered_df = filtered_df[column]
