@@ -20,7 +20,7 @@ class Explorer():
         self.begin_date = begin_date
         self.end_date = end_date
 
-    def update(df=None, lo=None, up=None, begin_date=None, end_date=None):
+    def update(self, df=None, lo=None, up=None, begin_date=None, end_date=None):
         """Update attributes in our explorer object"""
         if df:
             self.df = df
@@ -29,9 +29,11 @@ class Explorer():
         if up:
             self.up = up
         if begin_date:
-            self.begin_date = begin_date
+            self.begin_date = dt.datetime(begin_date.year, begin_date.month,
+                begin_date.day) - pd.DateOffset(days=0)
         if end_date:
-            self.end_date = end_date
+            self.end_date = dt.datetime(end_date.year, end_date.month,
+                end_date.day, 23, 59, 59) - pd.DateOffset(days=0)
 
     def bg_count(self):
         """Number of non-null blood glucose registries"""
@@ -85,9 +87,11 @@ class Explorer():
             # group by day
             filtered_df = filtered_df.groupby(filtered_df.date.dt.normalize()).sum()
         elif operate_on_cumsum == 'per_week':
+            return 1
             # group by week
             pass
         elif operate_on_cumsum == 'per_month':
+            return 2
             # group by month
             pass
 
@@ -120,17 +124,22 @@ class Explorer():
         else:
             return region_df.count()*100/self.df.bg.count()
 
-    def HbA1c(self, up_until=None):
+    def HbA1c(self, up_until=None, use_interval=None):
         """Glycated hemoglobin starting 3 months before up_until and ending at
         up_until.
 
         If up_until == None, calculates HbA1c starting 3 months from today.
+        If use_interval, uses explorer's interval.
         """
         if up_until:
             start_date = up_until
         else:
             start_date = dt.datetime.now()
-        start_date -= pd.DateOffset(months=3)
+
+        if use_interval:
+            start_date = self.begin_date
+        else:
+            start_date -= pd.DateOffset(months=3)
 
         avg_bg = self.df.bg[self.df.date >= start_date].mean()
         return (avg_bg+46.7)/28.7
@@ -159,45 +168,98 @@ class Explorer():
     
     def report(self):
         """Give a report"""
-        print("BLOOD GLUCOSE")
-        print("Mean and std deviation: {} ({})".format(
-            self.basic_stats('bg', 'avg'),
-            self.basic_stats('bg', 'std')))
-        print("Time in range: {}%".format(self.range_time('in')))
-        print("Time below range: {}%".format(self.range_time('below')))
-        print("Time above range: {}%".format(self.range_time('above')))
-        print("Mean and std deviation before all meals: {} ({})".format(
-            self.basic_stats('bg', 'avg', 'all', 'before'),
-            self.basic_stats('bg', 'std', 'all', 'before')))
-        print("Mean and std deviation after all meals: {} ({})".format(
-            self.basic_stats('bg', 'avg', 'all', 'after'),
-            self.basic_stats('bg', 'std', 'all', 'after')))
-        print("HbA1c: ", self.HbA1c())
-        print("INSULIN")
-        print("Total used: {}u".format(
-            self.basic_stats('applied_insulin', 'cumsum')))
-        print("Average (and std deviation) for use before any meal: ",
-            "{} ({})u".format(
-            self.basic_stats('applied_insulin', 'avg', 'all', 'before'),
-            self.basic_stats('applied_insulin', 'std', 'all', 'before')))
-        print("Average (and std deviation) for use after any meal: {} ({})u".format(
-            self.basic_stats('applied_insulin', 'avg', 'all', 'after'),
-            self.basic_stats('applied_insulin', 'std', 'all', 'after')))
-        print("Average (and std deviation) for general use: {} ({})u".format(
-            self.basic_stats('applied_insulin', 'avg'),
-            self.basic_stats('applied_insulin', 'std')))
-        print("CARBOHYDRATES - Average and std deviation: {} ({})".format(
-            self.basic_stats('carbohydrates', 'avg'),
-            self.basic_stats('carbohydrates', 'std')))
-        print("PROTEINS - Average and std deviation: {} ({})".format(
-            self.basic_stats('proteins', 'avg'),
-            self.basic_stats('proteins', 'std')))
-        print("FAT - Average and std deviation: {} ({})".format(
-            self.basic_stats('fat', 'avg'),
-            self.basic_stats('fat', 'std')))
-        print("Insulin average per day: {}".format(
-            self.basic_stats('applied_insulin', 'avg',
-                operate_on_cumsum='per_day')))
-        print("Insulin average when no meal registered: {}".format(
-            self.basic_stats('applied_insulin', 'avg', meal='no_meal')))
+        print(self.df.date[0], ' -> ', type(self.df.date[0]))
+        self.update(end_date=dt.datetime.now())
+        begin_dates = [
+            {"value": dt.datetime(self.end_date.year, self.end_date.month,
+                self.end_date.day) - pd.DateOffset(days=0),
+                "description": "Today"},
+            {"value": self.end_date - pd.DateOffset(days=3),
+               "description": "3 days"},
+            {"value": self.end_date - pd.DateOffset(days=7),
+               "description": "Week"},
+            {"value": self.end_date - pd.DateOffset(days=14),
+                "description": "2 weeks"},
+            {"value": self.end_date - pd.DateOffset(days=21),
+                "description": "3 weeks"},
+            {"value": self.end_date - pd.DateOffset(months=1),
+                "description": "Month"},
+            {"value": self.end_date - pd.DateOffset(months=3),
+                "description": "3 months"}]
+        
 
+        columns = ['bg', 'applied_insulin', 'basal_insulin', 'carbohydrates',
+            'proteins', 'fat']
+
+        #TODO: see if exercise will fit as meal
+        #TODO: filter by time of day in basic_stats
+        rows = [{'name': 'All registries', 'meal': None, 'op': ['avg', 'std'],
+                'moment': None, 'operate_on_cumsum': None},
+            {'name': 'All meals', 'meal': 'all', 'op': ['avg', 'std'],
+                'moment': ['before', 'after'], 'operate_on_cumsum': None},
+            {'name': 'Breakfast', 'meal': 'breakfast', 'op': ['avg', 'std'],
+                'moment': ['before', 'after'], 'operate_on_cumsum': None},
+            {'name': 'Lunch', 'meal': 'lunch', 'op': ['avg', 'std'],
+                'moment': ['before', 'after'], 'operate_on_cumsum': None},
+            {'name': 'Dinner', 'meal': 'dinner', 'op': ['avg', 'std'],
+                'moment': ['before', 'after'], 'operate_on_cumsum': None},
+            {'name': 'Snack', 'meal': 'snack', 'op': ['avg', 'std'],
+                'moment': ['before', 'after'], 'operate_on_cumsum': None},
+            {'name': 'Exercise', 'meal': 'exercise', 'op': ['avg', 'std'],
+                'moment': ['before', 'after'], 'operate_on_cumsum': None},
+            {'name': 'No meal', 'meal': 'no_meal', 'op': ['avg', 'std'],
+                'moment': None, 'operate_on_cumsum': None},
+            {'name': 'Sum per day', 'meal': None, 'op': ['avg', 'std',
+                'cumsum'], 'moment': None, 'operate_on_cumsum': 'per_day'},
+            {'name': 'Sum per week', 'meal': None, 'op': ['avg', 'std',
+                'cumsum'], 'moment': None, 'operate_on_cumsum': 'per_week'},
+            {'name': 'Sum per month', 'meal': None, 'op': ['avg', 'std',
+                'cumsum'], 'moment': None, 'operate_on_cumsum': 'per_month'},
+            {'name': 'Sum per 3 months', 'meal': None, 'op': ['avg', 'std',
+                'cumsum'], 'moment': None, 'operate_on_cumsum': 'per_3_months'}
+            ]
+
+        for date in begin_dates:
+            self.update(begin_date=date["value"])
+            print("\n# PERIOD: {}".format(date["description"]))
+            print("---")
+            print("\n**HbA1c**: {}".format(self.HbA1c()))
+            print("\n**Bg count**: {}".format(self.bg_count()))
+            print("\n**Time in/above/below range**: {}/{}/{}".format(
+                self.range_time(region='in'),
+                self.range_time(region='above'),
+                self.range_time(region='below')))
+            for column in columns:
+                print("\n## {}".format(column))
+                for row in rows:
+                    print("\n#### **{}**".format(row['name']))
+                    if row['meal'] and row['meal'] != 'no_meal':
+                        for moment in row['moment']:
+                            print("\n* **{}**:".format(moment), end='')
+                            for op in row['op']:
+                                if op == 'avg':
+                                    str_to_format = "{0:0.2f} ± "
+                                elif op == 'std':
+                                    str_to_format = "{0:0.2f} "
+                                elif op == 'cumsum':
+                                    str_to_format = "({0:0.2f})"
+                                print(str_to_format.format(
+                                    self.basic_stats(column, op,
+                                        row['meal'], row['moment'],
+                                        operate_on_cumsum=(
+                                            row['operate_on_cumsum']))),
+                                    end='')
+                            print()
+                    else:
+                        for op in row['op']:
+                            if op == 'avg':
+                                str_to_format = "{0:0.2f} ± "
+                            elif op == 'std':
+                                str_to_format = "{0:0.2f} "
+                            elif op == 'cumsum':
+                                str_to_format = "({0:0.2f})"
+                            print(str_to_format.format(
+                                self.basic_stats(column, op, meal=row['meal'],
+                                    operate_on_cumsum=row['operate_on_cumsum']
+                                )), end='')
+                        print()
