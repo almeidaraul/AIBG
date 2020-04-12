@@ -168,7 +168,6 @@ class Explorer():
     
     def report(self):
         """Give a report"""
-        print(self.df.date[0], ' -> ', type(self.df.date[0]))
         self.update(end_date=dt.datetime.now())
         begin_dates = [
             {"value": dt.datetime(self.end_date.year, self.end_date.month,
