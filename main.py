@@ -13,4 +13,11 @@ def preprocessing(filename='example_data.csv'):
 
 df = preprocessing()
 ex = Explorer(df)
-ex.report()
+print(ex.bg_count())
+print(ex.HbA1c())
+print(ex.range_time('in'))
+print(ex.range_time('below'))
+print(ex.range_time('above'))
+print(ex.basic_stats('bg', 'avg'))
+print(ex.basic_stats('bg', 'std'))
+print(ex.basic_stats('applied_insulin', 'cumsum'))
