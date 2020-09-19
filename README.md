@@ -1,10 +1,12 @@
-# Diabeats
-## Análises sobre registros glicêmicos convenientes ao auxílio de diabetes
-### Motivação (pessoal)
-* Eu sou diabético e não existe software que eu considere decente para essa tarefa;
-* É interessante gerar relatórios que respondam às minhas perguntas e às do meu endocrinologista;
-* Quero aprender a lidar com dados em Python.
+# BSIA - Blood Sugar and Insulin use Analysis
+## Personal motivation
+* I'm a diabetic and couldn't find any app or computer program that fits my needs when it comes to blood glucose analysis;
+* It's important that I'm able to generate reports which answer specific questions for me and my endo;
+* I want to learn how to handle data using Python.
 
-# Fonte para cálculo da HbA1c
-O cálculo da HbA1c depende da estimativa de glicemia média (em mg/dL) dos últimos três meses, conforme descrito em:
+## Plans for the future
+I plan on starting to analyse data from the CSV files that [Diaguard](https://github.com/Faltenreich/Diaguard) exports.
+
+# Source for calculating HbA1c
+The HbA1c estimative depends on the estimated average glucose (mg/dL) from the last three months, as described in:
 Nathan DM, Kuenen J, Borg R, Zheng H, Schoenfeld D, Heine RJ (2008). **"Translating the A1C assay into estimated average glucose values"**. *Diabetes Care*. 31 (8): 1473–78.
