@@ -1,11 +1,9 @@
-# BSIA - Blood Sugar and Insulin use Analysis
-## Personal motivation
-* I'm a diabetic and couldn't find any app or computer program that fits my needs when it comes to blood glucose analysis;
-* It's important that I'm able to generate reports which answer specific questions for me and my endo;
-* I want to learn how to handle data using Python.
+# AIBG - Analysis of Insuline use and Blood Glucose
+## Motivation
+It's important to have a good data analysis framework that fits a diabetic and their endo's needs when it comes to blood sugar analysis. This is what AIBG is meant to be.
 
-## Plans for the future
-I plan on starting to analyse data from the CSV files that [Diaguard](https://github.com/Faltenreich/Diaguard) exports.
+## What's happening right now
+The project is being overhauled in order to separate report creation and data analysis and filtering. Initially it'll support only the CSV files that [Diaguard](https://github.com/Faltenreich/Diaguard) exports, but there'll be support for future additions.
 
 # Source for calculating HbA1c
 The HbA1c estimative depends on the estimated average glucose (mg/dL) from the last three months, as described in:
