@@ -3,7 +3,8 @@ import pandas as pd
 
 class Explorer():
     def __init__(self, filename):
-        self.df = self.read_diaguard_backup(filename)
+        self.original_df = self.read_diaguard_backup(filename)
+        self.df = original_df.copy()
 
     def clean_diaguard_line(self, line):
         """
@@ -90,6 +91,19 @@ class Explorer():
         df = pd.DataFrame(entries)
         df['date']= pd.to_datetime(df['date'])
         return df
+
+    # filters select data from df and return the explorer itself
+    # (so you can do explorer.glucose(min=70, max=100).carbs(min=5, max=70).df)
+    def reset_df(self):
+        """go back to original df"""
+        self.df = self.original_df.copy()
+
+    def glucose(lower_bound=0, upper_bound=1000):
+        """filter by glucose"""
+        self.df = self.df[(self.df["glucose"] >= lower_bound)
+                          & (self.df["glucose"] < upper_bound)]
+        return self
+
 
 if __name__=="__main__":
     Explorer('diaguard.csv')
