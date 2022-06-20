@@ -2,9 +2,17 @@ from tqdm import trange
 import pandas as pd
 
 class Explorer():
-    def __init__(self, filename):
+    def __init__(self, filename, verbose=False):
         self.original_df = self.read_diaguard_backup(filename)
-        self.df = original_df.copy()
+        columns_with_nans = ["bolus_insulin", "correction_insulin",
+                             "basal_insulin", "activity"]
+        for column in columns_with_nans:
+            self.original_df[column] = self.original_df[column].fillna(0)
+        self.df = self.original_df.copy()
+        if verbose:
+            print(self.df.info())
+            print(self.df.describe())
+            print(self.df.head())
 
     def clean_diaguard_line(self, line):
         """
@@ -74,9 +82,6 @@ class Explorer():
                     else:
                         break
                     j += 1
-                food_str = [f"{x} ({meal[x]}g)" for x in meal.keys()]
-                meal_str = ", ".join(food_str)
-                #tags = ", ".join(tags)
                 entries.append({
                     "date": date,
                     "glucose": glucose,
@@ -86,7 +91,9 @@ class Explorer():
                     "activity": activity,
                     "hba1c": hba1c,
                     "meal": meal,
+                    "carbs": sum(meal.values()),
                     "tags": tags,
+                    "comments": comments,
                 })
         df = pd.DataFrame(entries)
         df['date']= pd.to_datetime(df['date'])
@@ -98,12 +105,99 @@ class Explorer():
         """go back to original df"""
         self.df = self.original_df.copy()
 
-    def glucose(lower_bound=0, upper_bound=1000):
+    def glucose(self, lower_bound=0, upper_bound=9999):
         """filter by glucose"""
         self.df = self.df[(self.df["glucose"] >= lower_bound)
                           & (self.df["glucose"] < upper_bound)]
         return self
 
+    def carbs(self, lower_bound=0, upper_bound=9999):
+        """filter by carbs (g)"""
+        self.df = self.df[(self.df["carbs"] >= lower_bound)
+                          & (self.df["carbs"] < upper_bound)]
+        return self
+
+    def bolus(self, lower_bound=0, upper_bound=9999):
+        """filter by bolus insulin units"""
+        self.df = self.df[(self.df["bolus_insulin"] >= lower_bound)
+                          & (self.df["bolus_insulin"] < upper_bound)]
+        return self
+
+    def correction(self, lower_bound=0, upper_bound=9999):
+        """filter by correction insulin units"""
+        self.df = self.df[(self.df["correction_insulin"] >= lower_bound)
+                          & (self.df["correction_insulin"] < upper_bound)]
+        return self
+
+    def basal(self, lower_bound=0, upper_bound=9999):
+        """filter by basal insulin units"""
+        self.df = self.df[(self.df["basal_insulin"] >= lower_bound)
+                          & (self.df["basal_insulin"] < upper_bound)]
+        return self
+
+    def fast_insulin(self, lower_bound=0, upper_bound=9999):
+        """filter by bolus and correction insulin units"""
+        sum_col = self.df["bolus_insulin"] + self.df["correction_insulin"]
+        self.df = self.df[(sum_col >= lower_bound) & (sum_col < upper_bound)]
+        return self
+
+    def total_insulin(self, lower_bound=0, upper_bound=9999):
+        """filter by total insulin units"""
+        sum_col = (self.df["bolus_insulin"] + self.df["correction_insulin"]
+                   + self.df["basal_insulin"])
+        self.df = self.df[(sum_col >= lower_bound) & (sum_col < upper_bound)]
+        return self
+
+    def activity(self, lower_bound=0, upper_bound=9999):
+        """filter by physical activity (minutes)"""
+        self.df = self.df[(self.df["activity"] >= lower_bound)
+                          & (self.df["activity"] < upper_bound)]
+        return self
+
+    def has_tags(self):
+        """select all entries with tags"""
+        self.df = self.df[self.df["tags"]]
+        return self
+
+    def no_tags(self):
+        """select all entries with no tags"""
+        self.df = self.df[self.df["tags"].empty]
+        # TODO
+        return self
+
+    def tags_include_any(self, tags):
+        """
+        select all entries with at least one of given tags
+        - tags: list of str; converted to unary list if it's a single string
+        """
+        if type(tags) == str:
+            tags = [tags]
+        # TODO
+        return self
+
+    def tags_include_all(self, tags):
+        """
+        select all entries where all tags are present
+        - tags: list of str; converted to unary list if it's a single string
+        """
+        if type(tags) == str:
+            tags = [tags]
+        # TODO
+        return self
+
+    def has_comments(self):
+        """select all entries with comments"""
+        self.df = self.df[not self.df["comments"].empty()]
+        return self
+
+    def date(self, lower_bound='1990-01-01', upper_bound='2100-01-01'):
+        """filter by date in format YYYY-MM-DD"""
+        self.df = self.df[(self.df['date'] >= lower_bound)
+                          & (self.df['date'] < upper_bound)]
+        return self
 
 if __name__=="__main__":
-    Explorer('diaguard.csv')
+    a = Explorer('diaguard.csv', verbose=True)
+    print(a.has_comments().df)
+    print(a.no_tags().df)
+    print(a.tags_include_all().df.head())
