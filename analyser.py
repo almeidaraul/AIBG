@@ -9,7 +9,7 @@ class Analyser():
         WARNING: HbA1c value should be calculated based on a 3 month window,
         which is not verified by this function
         """
-        return (self.avg("glucose")+46.7)/28.7
+        return (self.df["glucose"].mean()+46.7)/28.7
 
     def tir(self, lower_bound=70, upper_bound=180):
         """
@@ -23,6 +23,10 @@ class Analyser():
         below_range = glucose[glucose < lower_bound].count()
         above_range = glucose[glucose >= upper_bound].count()
         return in_range, below_range, above_range
+
+    def count(self):
+        """count number of entries"""
+        return self.df.count().max()
 
     def groupby_hour(self):
         """returns df grouped by hour of the day"""

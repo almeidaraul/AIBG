@@ -117,6 +117,7 @@ class Explorer():
     def reset_df(self):
         """go back to original df"""
         self.df = self.original_df.copy()
+        return self
 
     def glucose(self, lower_bound=0, upper_bound=9999):
         """filter by glucose"""
@@ -183,7 +184,8 @@ class Explorer():
         """
         if type(tags) == str:
             tags = [tags]
-        filter_column = self.df.apply(lambda row: any(t in row["tags"] for t in tags), axis=1)
+        filter_fn = lambda row: any(t in row["tags"] for t in tags)
+        filter_column = self.df.apply(filter_fn, axis=1)
         self.df = self.df[filter_column]
         return self
 
@@ -194,7 +196,8 @@ class Explorer():
         """
         if type(tags) == str:
             tags = [tags]
-        filter_column = self.df.apply(lambda row: all(t in row["tags"] for t in tags), axis=1)
+        filter_fn = lambda row: all(t in row["tags"] for t in tags)
+        filter_column = self.df.apply(filter_fn, axis=1)
         self.df = self.df[filter_column]
         return self
 
@@ -211,7 +214,9 @@ class Explorer():
 
     def last_x_days(self, x=90):
         """select all entries in the last x days"""
-        self.df = self.df[self.df["date"] > pd.Timestamp.now() + pd.Timedelta(-x, "d")]
+        now = pd.Timestamp.now()
+        delta = pd.Timedelta(-x, 'd')
+        self.df = self.df[self.df["date"] > now + delta]
         return self
 
 
