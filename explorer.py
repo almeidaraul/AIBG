@@ -156,13 +156,12 @@ class Explorer():
 
     def has_tags(self):
         """select all entries with tags"""
-        self.df = self.df[self.df["tags"]]
+        self.df = self.df[self.df["tags"].astype(bool)]
         return self
 
     def no_tags(self):
         """select all entries with no tags"""
-        self.df = self.df[self.df["tags"].empty]
-        # TODO
+        self.df = self.df[~self.df["tags"].astype(bool)]
         return self
 
     def tags_include_any(self, tags):
@@ -172,7 +171,8 @@ class Explorer():
         """
         if type(tags) == str:
             tags = [tags]
-        # TODO
+        filter_column = self.df.apply(lambda row: any(t in row["tags"] for t in tags), axis=1)
+        self.df = self.df[filter_column]
         return self
 
     def tags_include_all(self, tags):
@@ -182,12 +182,13 @@ class Explorer():
         """
         if type(tags) == str:
             tags = [tags]
-        # TODO
+        filter_column = self.df.apply(lambda row: all(t in row["tags"] for t in tags), axis=1)
+        self.df = self.df[filter_column]
         return self
 
     def has_comments(self):
         """select all entries with comments"""
-        self.df = self.df[not self.df["comments"].empty()]
+        self.df = self.df[self.df["comments"].astype(bool)]
         return self
 
     def date(self, lower_bound='1990-01-01', upper_bound='2100-01-01'):
@@ -198,6 +199,3 @@ class Explorer():
 
 if __name__=="__main__":
     a = Explorer('diaguard.csv', verbose=True)
-    print(a.has_comments().df)
-    print(a.no_tags().df)
-    print(a.tags_include_all().df.head())
