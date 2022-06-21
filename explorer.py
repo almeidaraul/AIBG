@@ -82,12 +82,25 @@ class Explorer():
                     else:
                         break
                     j += 1
+                numeric_bolus = bolus_insulin
+                if bolus_insulin == None:
+                    numeric_bolus = 0
+                numeric_correction = correction_insulin
+                if correction_insulin == None:
+                    numeric_correction = 0
+                numeric_basal = basal_insulin
+                if basal_insulin == None:
+                    numeric_basal = 0
+                fast_insulin = numeric_bolus + numeric_correction
+                total_insulin = fast_insulin + numeric_bolus
                 entries.append({
                     "date": date,
                     "glucose": glucose,
                     "bolus_insulin": bolus_insulin,
                     "correction_insulin": correction_insulin,
+                    "fast_insulin": fast_insulin,
                     "basal_insulin": basal_insulin,
+                    "total_insulin": total_insulin,
                     "activity": activity,
                     "hba1c": hba1c,
                     "meal": meal,
@@ -137,15 +150,14 @@ class Explorer():
 
     def fast_insulin(self, lower_bound=0, upper_bound=9999):
         """filter by bolus and correction insulin units"""
-        sum_col = self.df["bolus_insulin"] + self.df["correction_insulin"]
-        self.df = self.df[(sum_col >= lower_bound) & (sum_col < upper_bound)]
+        self.df = self.df[(self.df["fast_insulin"] >= lower_bound)
+                          & (self.df["fast_insulin"] < upper_bound)]
         return self
 
     def total_insulin(self, lower_bound=0, upper_bound=9999):
         """filter by total insulin units"""
-        sum_col = (self.df["bolus_insulin"] + self.df["correction_insulin"]
-                   + self.df["basal_insulin"])
-        self.df = self.df[(sum_col >= lower_bound) & (sum_col < upper_bound)]
+        self.df = self.df[(self.df["total_insulin"] >= lower_bound)
+                          & (self.df["total_insulin"] < upper_bound)]
         return self
 
     def activity(self, lower_bound=0, upper_bound=9999):
@@ -196,6 +208,12 @@ class Explorer():
         self.df = self.df[(self.df['date'] >= lower_bound)
                           & (self.df['date'] < upper_bound)]
         return self
+
+    def last_x_days(self, x=90):
+        """select all entries in the last x days"""
+        self.df = self.df[self.df["date"] > pd.Timestamp.now() + pd.Timedelta(-x, "d")]
+        return self
+
 
 if __name__=="__main__":
     a = Explorer('diaguard.csv', verbose=True)
