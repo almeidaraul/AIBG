@@ -20,55 +20,51 @@ class Reporter():
         plt.pie(values, labels=labels, startangle=90)
         plt.title("Time in Range")
         plt.savefig(fname)
+        plt.clf()
 
-    def plot_glucose(self, df, fname):
-        """plot glucose by time"""
-        # TODO
-        plt.figure(figsize=(21, 12))
-        plt.xticks(df["date"], rotation=90)
-        plt.title("Glucose by Time")
-        print(df)
-        plt.plot(df["date"], df["glucose"])
+    def plot_grouped_glucose(self, y, x, error, xlabel, ylabel, title,
+            fname, incline_xlabel=False):
+        """plot glucose entries per hour of the day (mean and std)"""
+        plt.xticks(x, rotation=(90 if incline_xlabel else 0))
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.errorbar(x, y, error, linestyle='-', marker='o', ecolor='green',
+                     capsize=2)
+        plt.title(title)
         plt.savefig(fname)
+        plt.clf()
 
     def get_values(self):
         """calculate all necessary information"""
         self.explorer.last_x_days(90)
         # hba1c
-        hba1c = self.analyser.hba1c()
+        hba1c = self.analyser.hba1c() #TODO
         self.explorer.reset_df().last_x_days(15)
-        # glucose (all entries)
-        glucose_entries = self.analyser.df[["date", "glucose"]]
-        self.plot_glucose(glucose_entries, 'glucose.png')
         # tir
         in_range, below_range, above_range = self.analyser.tir(70, 180)
         tir_graph_fname = 'tir.png'
-        self.plot_tir(in_range, below_range, above_range, 'tir.png')
+        self.plot_tir(in_range, below_range, above_range, 'tir.png') #TODO
         # total entries
-        total_entries = self.analyser.count()
+        total_entries = self.analyser.count() #TODO
         groupby_day = self.analyser.groupby_day()
         # entries per day
-        entries_per_day = groupby_day["date"].count()
+        entries_per_day = groupby_day["date"].count() #TODO
         # fast insulin total, mean, std per day
-        fast_insulin_per_day = {
-            "total": groupby_day["fast_insulin"].sum(),
-            "mean": groupby_day["fast_insulin"].mean(),
-            "std": groupby_day["fast_insulin"].std(),
-        }
+        fast_per_day = groupby_day["fast_insulin"].sum()
+        mean_fast_per_day = fast_per_day.mean() #TODO
+        std_fast_per_day = fast_per_day.std() #TODO
         # glucose mean, std per hour
         groupby_hour = self.analyser.groupby_hour()
         glucose_per_hour = {
             "mean": groupby_hour["glucose"].mean(),
             "std": groupby_hour["glucose"].std(),
         }
-        # glucose mean, std per week day
-        groupby_weekday = self.analyser.groupby_weekday()
-        glucose_per_weekday = {
-            "mean": groupby_weekday["glucose"].mean(),
-            "std": groupby_weekday["glucose"].std(),
-        }
-        # glucose by datetime
-        glucose_entries = self.analyser.df[["date", "glucose"]].dropna() #TODO dropna?
+        self.plot_grouped_glucose(y=glucose_per_hour["mean"],
+                                  x=np.array(range(24)),
+                                  error=glucose_per_hour["std"],
+                                  xlabel="Hour", ylabel="Glucose (mg/dL)",
+                                  title="Glucose per Hour",
+                                  fname="glucose_hour.png") #TODO
         # all entries table (pretty)
         show_columns = {
             'date': 'Date',
