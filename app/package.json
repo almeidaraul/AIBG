@@ -1,0 +1,14 @@
+{
+  "name": "bgai-backend",
+  "version": "1.0.0",
+  "description": "backend api for BGAI",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Raul Almeida",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.1"
+  }
+}
