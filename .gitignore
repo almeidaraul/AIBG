@@ -1,5 +1,7 @@
 src/diaguard.csv
 src/report.json
+app/node_modules/*
+app/package-lock.json
 
 # Created by https://www.gitignore.io/api/python
 # Edit at https://www.gitignore.io/?templates=python
