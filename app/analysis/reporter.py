@@ -1,6 +1,7 @@
 from analyser import Analyser
 from explorer import Explorer
 import json
+import sys
 
 class Reporter():
     def __init__(self, explorer):
@@ -85,10 +86,12 @@ class JSONReporter(Reporter):
     def __init__(self, explorer):
         super().__init__(explorer)
     
-    def save(self, filename="report.json"):
+    def save(self, filename=None):
         report = super().get_values()
-        with open(filename, 'w') as f:
-            json.dump(report, f)
+        f = sys.stdout
+        if filename:
+            f = open(filename, 'w');
+        json.dump(report, f)
 
 if __name__=="__main__":
     a = Explorer('diaguard.csv', verbose=False)

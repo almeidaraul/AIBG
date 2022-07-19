@@ -1,9 +1,14 @@
-from tqdm import trange
 import pandas as pd
+import sys
+from tqdm import trange
 
 class Explorer():
-    def __init__(self, filename, verbose=False):
-        self.original_df = self.read_diaguard_backup(filename)
+    def __init__(self, filename=None, verbose=False):
+        self.verbose = verbose
+        f = sys.stdin
+        if filename:
+            f = open(filename, 'r')
+        self.original_df = self.read_diaguard_backup(f)
         columns_with_nans = ["bolus_insulin", "correction_insulin",
                              "basal_insulin", "activity"]
         for column in columns_with_nans:
@@ -31,13 +36,17 @@ class Explorer():
             clean_line.append(item)
         return clean_line
     
-    def read_diaguard_backup(self, filename):
+    def read_diaguard_backup(self, f):
         """read a diaguard backup csv file to create the entry dataframe"""
-        f = open(filename, 'r')
         lines = [line.strip() for line in f.readlines()]
         foods = {} # food: carbs (g) per 100g
         entries = []
-        for i in trange(len(lines), desc=f"Read Diaguard backup {filename}", unit="lines"):
+
+        line_range = range(len(lines))
+        if self.verbose:
+            line_range = trange(len(lines), desc=f"Read Diaguard backup", unit="lines")
+
+        for i in line_range:
             line = self.clean_diaguard_line(lines[i])
             name = line[0]
             if name == "food":
