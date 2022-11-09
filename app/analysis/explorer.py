@@ -12,7 +12,6 @@ class Explorer():
         self.original_df = self.read_diaguard_backup(f)
         self.original_df = self.original_df.sort_values(by='date',
                 ascending=True)
-        print(self.original_df)
 
         columns_with_nans = ["bolus_insulin", "correction_insulin",
                              "basal_insulin", "activity"]
