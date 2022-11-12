@@ -2,6 +2,7 @@ import pandas as pd
 import sys
 from tqdm import trange
 
+
 class Explorer():
     def __init__(self, filename=None, verbose=False):
         self.verbose = verbose
@@ -10,8 +11,8 @@ class Explorer():
             f = open(filename, 'r')
 
         self.original_df = self.read_diaguard_backup(f)
-        self.original_df = self.original_df.sort_values(by='date',
-                ascending=True)
+        self.original_df = self.original_df.sort_values(
+            by='date', ascending=True)
 
         columns_with_nans = ["bolus_insulin", "correction_insulin",
                              "basal_insulin", "activity"]
@@ -41,16 +42,17 @@ class Explorer():
                     item = item[:-1]
             clean_line.append(item)
         return clean_line
-    
+
     def read_diaguard_backup(self, f):
         """read a diaguard backup csv file to create the entry dataframe"""
         lines = [line.strip() for line in f.readlines()]
-        foods = {} # food: carbs (g) per 100g
+        foods = {}  # food: carbs (g) per 100g
         entries = []
 
         line_range = range(len(lines))
         if self.verbose:
-            line_range = trange(len(lines), desc=f"Read Diaguard backup", unit="lines")
+            line_range = trange(len(lines), desc="Read Diaguard backup",
+                                unit="lines")
 
         for i in line_range:
             line = self.clean_diaguard_line(lines[i])
@@ -67,7 +69,7 @@ class Explorer():
                 basal_insulin = None
                 activity = None
                 hba1c = None
-                meal = {} # food: grams of carbs
+                meal = {}  # food: grams of carbs
                 tags = []
                 j = i+1
                 while j < len(lines):
@@ -98,13 +100,13 @@ class Explorer():
                         break
                     j += 1
                 numeric_bolus = bolus_insulin
-                if bolus_insulin == None:
+                if bolus_insulin is None:
                     numeric_bolus = 0
                 numeric_correction = correction_insulin
-                if correction_insulin == None:
+                if correction_insulin is None:
                     numeric_correction = 0
                 numeric_basal = basal_insulin
-                if basal_insulin == None:
+                if basal_insulin is None:
                     numeric_basal = 0
                 fast_insulin = numeric_bolus + numeric_correction
                 total_insulin = fast_insulin + numeric_bolus
@@ -114,7 +116,7 @@ class Explorer():
                     "bolus_insulin": bolus_insulin,
                     "correction_insulin": correction_insulin,
                     "fast_insulin": fast_insulin,
-                    "basal_insulin": basal_insulin,
+                    "basal_insulin": numeric_basal,
                     "total_insulin": total_insulin,
                     "activity": activity,
                     "hba1c": hba1c,
@@ -124,7 +126,7 @@ class Explorer():
                     "comments": comments,
                 })
         df = pd.DataFrame(entries)
-        df['date']= pd.to_datetime(df['date'])
+        df['date'] = pd.to_datetime(df['date'])
         return df
 
     # filters select data from df and return the explorer itself
@@ -197,9 +199,9 @@ class Explorer():
         select all entries with at least one of given tags
         - tags: list of str; converted to unary list if it's a single string
         """
+        def filter_fn(row): return any(t in row["tags"] for t in tags)
         if type(tags) == str:
             tags = [tags]
-        filter_fn = lambda row: any(t in row["tags"] for t in tags)
         filter_column = self.df.apply(filter_fn, axis=1)
         self.df = self.df[filter_column]
         return self
@@ -209,9 +211,9 @@ class Explorer():
         select all entries where all tags are present
         - tags: list of str; converted to unary list if it's a single string
         """
+        def filter_fn(row): return all(t in row["tags"] for t in tags)
         if type(tags) == str:
             tags = [tags]
-        filter_fn = lambda row: all(t in row["tags"] for t in tags)
         filter_column = self.df.apply(filter_fn, axis=1)
         self.df = self.df[filter_column]
         return self
@@ -235,5 +237,5 @@ class Explorer():
         return self
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     a = Explorer('diaguard.csv', verbose=True)

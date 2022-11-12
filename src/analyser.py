@@ -19,7 +19,8 @@ class Analyser():
         (i.e., in range, below range, and above range)
         """
         glucose = self.df["glucose"]
-        in_range = glucose[(glucose >= lower_bound) & (glucose < upper_bound)].count()
+        in_range = glucose[(glucose >= lower_bound)
+                           & (glucose < upper_bound)].count()
         below_range = glucose[glucose < lower_bound].count()
         above_range = glucose[glucose >= upper_bound].count()
         return in_range, below_range, above_range

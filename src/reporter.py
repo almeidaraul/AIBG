@@ -1,7 +1,5 @@
 from analyser import Analyser
-from explorer import Explorer
-import json
-import sys
+
 
 class Reporter():
     def __init__(self, explorer):
@@ -15,14 +13,15 @@ class Reporter():
         # hba1c
         hba1c = self.analyser.hba1c()
         report["hba1c"] = float(hba1c)
+        # tir
         self.explorer.reset_df().last_x_days(15)
         self.analyser = Analyser(self.explorer.df)
-        # tir
         in_range, below_range, above_range = self.analyser.tir(70, 180)
-        tir_graph_fname = 'tir.png'
         report["in_range"] = float(in_range)
         report["below_range"] = float(below_range)
         report["above_range"] = float(above_range)
+        self.explorer.reset_df().last_x_days(5)
+        self.analyser = Analyser(self.explorer.df)
         # total entries
         total_entries = self.analyser.count()
         report["total_entries"] = int(total_entries)
@@ -62,14 +61,15 @@ class Reporter():
             'carbs': 'Carbohydrates',
         }
         table = self.analyser.df[list(show_columns.keys())].copy()
-        meal_to_str = lambda meal: '; '.join(
+        def meal_to_str(meal): return '; '.join(
                 [f"{x}, {meal[x]:.1f}g" for x in meal.keys()])
         table["meal"] = table["meal"].apply(meal_to_str)
         numeric_columns = ["glucose", "carbs", "bolus_insulin",
                            "correction_insulin", "basal_insulin"]
         for col in numeric_columns:
             table[col] = table[col].fillna(0).apply(lambda x: int(x))
-        table = table.rename(columns=show_columns)
+        # reverse order (recent entries first)
+        table = table.rename(columns=show_columns)[::-1].reset_index(drop=True)
         table = {
                 "Date": table["Date"].astype(str).tolist(),
                 "Glucose": [float(x) for x in table["Glucose"].tolist()],
@@ -77,23 +77,11 @@ class Reporter():
                 "Correction": [int(x) for x in table["Correction"].tolist()],
                 "Basal": [int(x) for x in table["Basal"].tolist()],
                 "Meal": table["Meal"].tolist(),
-                "Carbohydrates": [int(x) for x in table["Carbohydrates"].tolist()],
+                "Carbohydrates": [int(x)
+                                  for x in table["Carbohydrates"].tolist()],
                 }
         report["table"] = table
         return report
 
-class JSONReporter(Reporter):
-    def __init__(self, explorer):
-        super().__init__(explorer)
-    
-    def save(self, filename=None):
-        report = super().get_values()
-        f = sys.stdout
-        if filename:
-            f = open(filename, 'w');
-        json.dump(report, f)
-
-if __name__=="__main__":
-    a = Explorer('diaguard.csv', verbose=False)
-    b = JSONReporter(a)
-    b.save()
+    def report(self):
+        pass
