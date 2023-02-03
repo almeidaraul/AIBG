@@ -1,5 +1,6 @@
 src/diaguard.csv
 src/report.json
+src/output.pdf
 app/node_modules/*
 app/package-lock.json
 

@@ -1,7 +1,7 @@
 from reporter import Reporter
 
 
-class EasyReporter(Reporter):
+class RawReporter(Reporter):
     def __init__(self, explorer):
         super().__init__(explorer)
 
