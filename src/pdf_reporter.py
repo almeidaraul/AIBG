@@ -48,7 +48,7 @@ class PDFReporter(Reporter):
         colors = ["tab:red", "tab:blue", "tab:olive"]
 
         plt.pie(sizes, labels=percentages, colors=colors)
-        plt.legend(labels, loc="best", bbox_to_anchor=(1, 0, 0.5, 1))
+        plt.legend(labels, loc="best", bbox_to_anchor=(1, 0, 1, 1))
         self.pdf.savefig(fig)
 
     def plot_mean_glucose_per_hour(self):
