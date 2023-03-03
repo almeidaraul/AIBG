@@ -74,12 +74,30 @@ class PDFReporter(Reporter):
 
         self.pdf.savefig(fig)
 
+    def plot_table(self):
+        columns = list(self.report['table'].keys())
+        all_data = np.array([self.report['table'][k] for k in columns]).T
+        num_steps = len(all_data) // 10
+        if 10 * num_steps < len(all_data):
+            num_steps += 1
+        for i in range(num_steps):
+            data = all_data[i*10:(i+1)*10]
+
+            fig = plt.figure(figsize=self.A5_FIGURE_SIZE)
+            ax = fig.add_subplot(1, 1, 1)
+
+            table = ax.table(cellText=data, colLabels=columns, loc='center')
+            table.set_fontsize(14)
+            ax.axis('off')
+
+            self.pdf.savefig(fig)
+
     def report(self, filename=None):
         self.report = super().get_values()
         self.pdf = backend_pdf.PdfPages("output.pdf")
         
         self.plot_statistics()
-
         self.plot_mean_glucose_per_hour()
+        self.plot_table()
 
         self.pdf.close()
