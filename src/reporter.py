@@ -70,16 +70,6 @@ class Reporter():
             table[col] = table[col].fillna(0).apply(lambda x: int(x))
         # reverse order (recent entries first)
         table = table.rename(columns=show_columns)[::-1].reset_index(drop=True)
-        table = {
-                "Date": table["Date"].astype(str).tolist(),
-                "Glucose": [float(x) for x in table["Glucose"].tolist()],
-                "Bolus": [int(x) for x in table["Bolus"].tolist()],
-                "Correction": [int(x) for x in table["Correction"].tolist()],
-                "Basal": [int(x) for x in table["Basal"].tolist()],
-                "Meal": table["Meal"].tolist(),
-                "Carbohydrates": [int(x)
-                                  for x in table["Carbohydrates"].tolist()],
-                }
         report["table"] = table
         return report
 
