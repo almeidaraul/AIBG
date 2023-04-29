@@ -77,17 +77,18 @@ class PDFReporter(Reporter):
     def plot_table(self):
         columns = list(self.report['table'].keys())
         all_data = np.array([self.report['table'][k] for k in columns]).T
-        num_steps = len(all_data) // 10
-        if 10 * num_steps < len(all_data):
+        rows_per_page = 20
+        num_steps = len(all_data) // rows_per_page
+        if rows_per_page * num_steps < len(all_data):
             num_steps += 1
         for i in range(num_steps):
-            data = all_data[i*10:(i+1)*10]
+            data = all_data[i*rows_per_page:(i+1)*rows_per_page]
 
             fig = plt.figure(figsize=self.A5_FIGURE_SIZE)
             ax = fig.add_subplot(1, 1, 1)
 
-            table = ax.table(cellText=data, colLabels=columns, loc='center')
-            table.set_fontsize(14)
+            table = ax.table(cellText=data, colLabels=columns, loc='center',
+                             fontsize=14)
             ax.axis('off')
 
             self.pdf.savefig(fig)

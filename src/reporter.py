@@ -1,3 +1,4 @@
+import pandas as pd
 from analyser import Analyser
 
 
@@ -5,43 +6,46 @@ class Reporter():
     def __init__(self, explorer):
         self.explorer = explorer
         self.analyser = Analyser(self.explorer.df)
+        self.report_dict = {}
+        self.get_values()
 
-    def get_values(self):
-        """calculate all necessary information"""
-        report = {}
+    def reset_df(self, day_count):
+        """resets df to last x days"""
+        self.explorer.reset_df().last_x_days(day_count)
+        self.analyser = Analyser(self.explorer.df)
+
+    def update_hba1c(self):
         self.explorer.last_x_days(90)
-        # hba1c
-        hba1c = self.analyser.hba1c()
-        report["hba1c"] = float(hba1c)
-        # tir
-        self.explorer.reset_df().last_x_days(15)
-        self.analyser = Analyser(self.explorer.df)
+        self.report_dict["hba1c"] = float(self.analyser.hba1c())
+
+    def update_tir(self):
         in_range, below_range, above_range = self.analyser.tir(70, 180)
-        report["in_range"] = float(in_range)
-        report["below_range"] = float(below_range)
-        report["above_range"] = float(above_range)
-        self.explorer.reset_df().last_x_days(5)
-        self.analyser = Analyser(self.explorer.df)
-        # total entries
+        self.report_dict["in_range"] = float(in_range)
+        self.report_dict["below_range"] = float(below_range)
+        self.report_dict["above_range"] = float(above_range)
+
+    def update_entry_count(self):
+        # total
         total_entries = self.analyser.count()
-        report["total_entries"] = int(total_entries)
-        groupby_day = self.analyser.groupby_day()
-        # mean entries per day
-        entries_per_day = groupby_day["date"].count().mean()
-        report["entries_per_day"] = float(entries_per_day)
-        # fast insulin total, mean, std per day
-        fast_per_day = groupby_day["fast_insulin"].sum()
+        self.report_dict["total_entries"] = int(total_entries)
+        # per day
+        entries_per_day = self.groupby_day["date"].count().mean()
+        self.report_dict["entries_per_day"] = float(entries_per_day)
+
+    def update_insulin_use(self):
+        fast_per_day = self.groupby_day["fast_insulin"].sum()
         mean_fast_per_day = fast_per_day.mean()
         std_fast_per_day = fast_per_day.std()
-        report["mean_fast_per_day"] = float(mean_fast_per_day)
-        report["std_fast_per_day"] = float(std_fast_per_day)
-        # glucose mean, std per hour
+        self.report_dict["mean_fast_per_day"] = float(mean_fast_per_day)
+        self.report_dict["std_fast_per_day"] = float(std_fast_per_day)
+
+    def update_glucose(self):
         groupby_hour = self.analyser.groupby_hour()
         glucose_per_hour = {
             "mean": groupby_hour["glucose"].mean(),
             "std": groupby_hour["glucose"].std(),
         }
-        report["mean_glucose_per_hour"] = {
+        self.report_dict["mean_glucose_per_hour"] = {
                 "mean_glucose": [
                     float(x) for x in glucose_per_hour["mean"].tolist()
                 ],
@@ -50,7 +54,11 @@ class Reporter():
                     float(x) for x in glucose_per_hour["std"].tolist()
                 ],
                 }
-        # all entries table (pretty)
+
+    def update_table(self):
+        def meal_to_str(meal): return '; '.join(
+                [f"{x}, {meal[x]:.1f}g" for x in meal.keys()])
+        def epoch_to_datetime(e): return e.strftime('%d/%m/%y %H:%M')
         show_columns = {
             'date': 'Date',
             'glucose': 'Glucose',
@@ -61,17 +69,29 @@ class Reporter():
             'carbs': 'Carbohydrates',
         }
         table = self.analyser.df[list(show_columns.keys())].copy()
-        def meal_to_str(meal): return '; '.join(
-                [f"{x}, {meal[x]:.1f}g" for x in meal.keys()])
         table["meal"] = table["meal"].apply(meal_to_str)
         numeric_columns = ["glucose", "carbs", "bolus_insulin",
                            "correction_insulin", "basal_insulin"]
         for col in numeric_columns:
             table[col] = table[col].fillna(0).apply(lambda x: int(x))
+            table[col] = table[col].astype(str).replace(['0'], '')
+        table["date"] = table["date"].apply(epoch_to_datetime)
         # reverse order (recent entries first)
         table = table.rename(columns=show_columns)[::-1].reset_index(drop=True)
-        report["table"] = table
-        return report
+        self.report_dict["table"] = table
+
+    def get_values(self):
+        """calculate all necessary information"""
+        self.update_hba1c()
+        self.reset_df(15)
+        self.update_tir()
+        self.reset_df(5)
+        self.groupby_day = self.analyser.groupby_day()
+        self.update_entry_count()
+        self.update_insulin_use()
+        self.update_glucose()
+        self.update_table()
+        return self.report_dict
 
     def report(self):
         pass
