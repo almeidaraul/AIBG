@@ -1,5 +1,5 @@
 import pandas as pd
-from analyser import Analyser
+from .analyser import Analyser
 
 
 class Reporter():

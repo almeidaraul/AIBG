@@ -1,4 +1,4 @@
-from reporter import Reporter
+from .base_reporter import Reporter
 
 
 class RawReporter(Reporter):

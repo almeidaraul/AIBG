@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.backends.backend_pdf as backend_pdf
 import matplotlib.pyplot as plt
 import sys
-from reporter import Reporter
+from .base_reporter import Reporter
 from math import isnan
 
 

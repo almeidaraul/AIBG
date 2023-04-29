@@ -1,7 +1,7 @@
 import pandas as pd
 import sys
 
-from diaguard_import_reader import DiaguardImportReader
+from .loaders import DiaguardImportReader
 
 
 class Explorer():

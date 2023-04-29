@@ -1,6 +1,6 @@
 import json
 import sys
-from reporter import Reporter
+from .base_reporter import Reporter
 
 
 class JSONReporter(Reporter):
