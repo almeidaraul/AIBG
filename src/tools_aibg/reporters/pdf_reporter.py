@@ -93,9 +93,9 @@ class PDFReporter(Reporter):
 
             self.pdf.savefig(fig)
 
-    def report(self, filename=None):
+    def report(self, filename="output.pdf"):
         self.report = super().get_values()
-        self.pdf = backend_pdf.PdfPages("output.pdf")
+        self.pdf = backend_pdf.PdfPages(filename)
         
         self.plot_statistics()
         self.plot_mean_glucose_per_hour()
