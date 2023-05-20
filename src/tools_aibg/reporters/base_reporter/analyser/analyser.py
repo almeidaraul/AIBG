@@ -1,5 +1,9 @@
+import pandas as pd
+
 class Analyser():
-    def __init__(self, df):
+    """Analyser class for manipulating the entries dataframe for analysis"""
+
+    def __init__(self, df: pd.DataFrame):
         self.df = df
 
     def hba1c(self):
@@ -13,9 +17,9 @@ class Analyser():
 
     def tir(self, lower_bound=70, upper_bound=180):
         """
-        time in range
+        Time in range
 
-        returns total number of entries in [lo, up), (, lo) and [up,)
+        Returns total number of entries in [lo, up), (, lo) and [up,)
         (i.e., in range, below range, and above range)
         """
         glucose = self.df["glucose"]
@@ -26,17 +30,17 @@ class Analyser():
         return in_range, below_range, above_range
 
     def count(self):
-        """count number of entries"""
+        """Count number of entries"""
         return self.df.count().max()
 
     def groupby_hour(self):
-        """returns df grouped by hour of the day"""
+        """Returns df grouped by hour of the day"""
         return self.df.groupby(self.df["date"].dt.hour)
 
     def groupby_day(self):
-        """returns df grouped by date without hour"""
+        """Returns df grouped by date without hour"""
         return self.df.groupby(self.df["date"].dt.date)
 
     def groupby_weekday(self):
-        """returns df grouped by day of the week"""
+        """Returns df grouped by day of the week"""
         return self.df.groupby(self.df["date"].dt.day_name())
