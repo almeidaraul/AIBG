@@ -2,10 +2,13 @@ from .base_reporter import Reporter
 
 
 class RawReporter(Reporter):
+    """Reporter for pure text reports"""
+
     def __init__(self, explorer):
         super().__init__(explorer)
 
     def report(self):
+        """Print report to STDOUT"""
         report = super().get_values()
         print("# Statistics")
         print("## Last 3 months")

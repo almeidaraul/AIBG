@@ -1,19 +1,22 @@
 import numpy as np
 import matplotlib.backends.backend_pdf as backend_pdf
 import matplotlib.pyplot as plt
-import sys
 from .base_reporter import Reporter
 from math import isnan
+from typing import Union, BinaryIO, Final
 
 
 class PDFReporter(Reporter):
+    """Reporter for PDF files and buffers"""
+
     def __init__(self, explorer):
         super().__init__(explorer)
-        self.A5_FIGURE_SIZE=(8.27, 5.83)
+        self.A5_FIGURE_SIZE: Final = (8.27, 5.83)
 
     def plot_statistics(self):
+        """Plots basic statistics such as TIR and HbA1c to target PDF"""
         fig = plt.figure(figsize=self.A5_FIGURE_SIZE)
-        ax1 = plt.subplot2grid((2, 1), (0, 0))
+        plt.subplot2grid((2, 1), (0, 0))
 
         plt.text(0, 1, "Statistics", ha="left", va="top", fontsize=28)
         plt.text(0, 0.8, f"HbA1c (last 3 months): {self.report['hba1c']:.2f}%",
@@ -22,7 +25,7 @@ class PDFReporter(Reporter):
         total_entries = self.report['total_entries']
         entries_per_day = self.report['entries_per_day']
         plt.text(
-            0, 0.6, 
+            0, 0.6,
             f"Total entries: {total_entries}, per day: {entries_per_day:.2f}",
             ha="left", va="top")
         fast_per_day = self.report['mean_fast_per_day']
@@ -36,7 +39,7 @@ class PDFReporter(Reporter):
         # time in range pie chart
         plt.text(.5, 0, "Time in Range", ha="center", va="bottom", fontsize=16)
 
-        ax2 = plt.subplot2grid((2, 1), (1, 0), aspect="equal")
+        plt.subplot2grid((2, 1), (1, 0), aspect="equal")
 
         labels = ["Above range", "Below range", "In range"]
         sizes = [self.report["above_range"], self.report["below_range"],
@@ -52,6 +55,7 @@ class PDFReporter(Reporter):
         self.pdf.savefig(fig)
 
     def plot_mean_glucose_per_hour(self):
+        """Plots a mean glucose/hour line graph to target PDF"""
         fig = plt.figure(figsize=self.A5_FIGURE_SIZE)
         ax = fig.add_subplot(1, 1, 1)
 
@@ -75,6 +79,7 @@ class PDFReporter(Reporter):
         self.pdf.savefig(fig)
 
     def plot_table(self):
+        """Plots the created table (with daily records) to target PDF"""
         columns = list(self.report['table'].keys())
         all_data = np.array([self.report['table'][k] for k in columns]).T
         rows_per_page = 20
@@ -87,18 +92,24 @@ class PDFReporter(Reporter):
             fig = plt.figure(figsize=self.A5_FIGURE_SIZE)
             ax = fig.add_subplot(1, 1, 1)
 
-            table = ax.table(cellText=data, colLabels=columns, loc='center',
-                             fontsize=14)
+            ax.table(cellText=data, colLabels=columns, loc='center',
+                     fontsize=14)
             ax.axis('off')
 
             self.pdf.savefig(fig)
 
-    def report(self, filename="output.pdf"):
+    def report(self, f: Union[str, BinaryIO] = "output.pdf"):
+        """Create PDF report to be saved in f
+
+        Arguments:
+        f: target file or buffer
+        """
         self.report = super().get_values()
-        self.pdf = backend_pdf.PdfPages(filename)
-        
+        self.pdf = backend_pdf.PdfPages(f)
+
         self.plot_statistics()
         self.plot_mean_glucose_per_hour()
         self.plot_table()
 
         self.pdf.close()
+        return f
