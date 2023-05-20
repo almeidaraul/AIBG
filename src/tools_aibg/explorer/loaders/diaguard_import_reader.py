@@ -1,10 +1,12 @@
 import re
 import pandas as pd
+from typing import TextIO
 
 
 class DiaguardImportReader():
-    def __init__(self, f):
-        """reads a diaguard backup csv file and creates the entry dataframe"""
+    """Reads Diaguard CSV backup file into a dataframe for Explorer objects"""
+    def __init__(self, f: TextIO):
+        """Reads a diaguard backup csv file and creates the entry dataframe"""
         self.lines = [line.strip() for line in f.readlines()]
         self.foods = {}  # format: `food: carbs (g) per 100g`
         self.entries = []
@@ -13,16 +15,18 @@ class DiaguardImportReader():
         self.df['date'] = pd.to_datetime(self.df['date'])
 
     def format_line(self, line):
-        """remove double quotes and semicolons and convert to list"""
+        """Remove double quotes and semicolons and convert to list"""
         def clear_chars(s): return re.sub(r"^\"|\"$", "", s)
         line = list(map(clear_chars, line.split(';')))
         return line[0], line[1:]
 
     def process_food(self, food_info):
+        """Format food name and save it into foods dictionary"""
         food_name = food_info[0].lower()
         self.foods[food_name] = float(food_info[-1])
 
     def process_entry(self, content, i):
+        """Process a single entry starting at given index"""
         date, comments = content[:2]
         glucose, activity, hba1c = None, 0, None
         insulin = (0,)*3  # bolus, correction, basal
@@ -70,6 +74,7 @@ class DiaguardImportReader():
         return i
 
     def process_backup(self):
+        """Process the whole CSV backup file"""
         i = 0
         while i < len(self.lines):
             name, content = self.format_line(self.lines[i])

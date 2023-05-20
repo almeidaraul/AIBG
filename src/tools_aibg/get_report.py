@@ -1,5 +1,4 @@
 import argparse
-import sys
 from .explorer import Explorer
 from .reporters.json_reporter import JSONReporter
 from .reporters.raw_reporter import RawReporter
