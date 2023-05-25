@@ -63,9 +63,14 @@ class PDFReporter(Reporter):
         glucose = self.report["mean_glucose_per_hour"]["mean_glucose"]
         std = self.report["mean_glucose_per_hour"]["std_error"]
         std = list(map(lambda x: 0.0 if isnan(x) else x, std))
+        to_pop = [i for i in range(len(hour)-1, -1, -1) if isnan(glucose[i])]
+        for i in to_pop:
+            hour.pop(i)
+            glucose.pop(i)
+            std.pop(i)
 
-        ax.errorbar(hour, glucose, yerr=std, fmt='-o', capsize=3,
-                    elinewidth=2, capthick=2, color="royalblue",
+        ax.errorbar(hour, glucose, yerr=std, fmt='-o',
+                    capsize=3, elinewidth=2, capthick=2, color="royalblue",
                     ecolor="slategrey")
         ax.set_xlabel('Hour')
         ax.set_ylabel('Glucose (mg/dL)')
