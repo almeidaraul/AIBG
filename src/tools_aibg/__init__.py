@@ -1,1 +1,1 @@
-from .get_report import get_report
+from .reporter import JSONReporter, PDFReporter
