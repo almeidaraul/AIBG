@@ -1,1 +1,1 @@
-from .reporter import JSONReporter, PDFReporter
+from .report_creator import JSONReportCreator, PDFReportCreator

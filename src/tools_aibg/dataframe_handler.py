@@ -4,7 +4,7 @@ import sys
 from typing import Union, TextIO, List
 
 
-class DiaguardImportReader():
+class DiaguardCSVParser():
     """Reads Diaguard CSV backup file into a dataframe for Explorer objects"""
     def __init__(self, f: TextIO):
         """Reads a diaguard backup csv file and creates the entry dataframe"""
@@ -89,11 +89,11 @@ class DiaguardImportReader():
 
 
 
-class Explorer():
+class DataFrameHandler():
     """Explorer class for obtaining and filtering the entry dataframe"""
     def __init__(self, f: TextIO):
         """Constructs the entry dataframe, sorted by ascending datetime"""
-        self.original_df = DiaguardImportReader(f).df
+        self.original_df = DiaguardCSVParser(f).df
         self.original_df.sort_values(by="date", ascending=True, inplace=True)
         self.df = self.original_df.copy()
 

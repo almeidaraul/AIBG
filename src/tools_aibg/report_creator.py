@@ -6,10 +6,10 @@ from matplotlib import pyplot as plt
 from matplotlib.backends import backend_pdf
 from typing import BinaryIO, TextIO, Union, Final
 
-from .explorer import Explorer
+from .dataframe_handler import DataFrameHandler
 
 
-class Reporter():
+class ReportCreator():
     """Base reporter class
 
     This class' methods can be split into three categories:
@@ -22,7 +22,7 @@ class Reporter():
     """
 
     def __init__(self, f: TextIO):
-        self.explorer = Explorer(f)
+        self.explorer = DataFrameHandler(f)
         self.report_dict = {}
         self.get_values()
 
@@ -127,16 +127,16 @@ class Reporter():
         pass
 
 
-class JSONReporter(Reporter):
-    """Reporter for JSON files"""
+class JSONReportCreator(ReportCreator):
+    """ReportCreator for JSON files"""
 
     def report(self, target: TextIO):
         """Dump base report dict into target JSON file"""
         json.dump(self.report_dict, target)
 
 
-class PDFReporter(Reporter):
-    """Reporter for PDF files and buffers"""
+class PDFReportCreator(ReportCreator):
+    """ReportCreator for PDF files and buffers"""
 
     def __init__(self, f: TextIO):
         super().__init__(f)

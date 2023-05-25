@@ -1,6 +1,6 @@
 import sys
 import argparse
-from tools_aibg import JSONReporter, PDFReporter
+from tools_aibg import JSONReportCreator, PDFReportCreator
 
 
 def get_args():
@@ -22,9 +22,9 @@ def get_report(args=None):
 
     if args.format == "json":
         output = open("output.json", "w")
-        reporter = JSONReporter(input)
+        reporter = JSONReportCreator(input)
     elif args.format == "pdf":
         output = open("output.pdf", "wb")
-        reporter = PDFReporter(input)
+        reporter = PDFReportCreator(input)
 
     reporter.report(output)
