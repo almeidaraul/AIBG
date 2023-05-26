@@ -28,3 +28,7 @@ def get_report(args=None):
         reporter = PDFReportCreator(input)
 
     reporter.report(output)
+
+
+if __name__ == "__main__":
+    get_report()

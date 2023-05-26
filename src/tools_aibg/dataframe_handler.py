@@ -42,12 +42,12 @@ class DiaguardCSVParser():
 
         The DataFrame is created from the entries list and derived columns"""
         self.df = pd.DataFrame(self.entries)
-        self.df['date'] = pd.to_datetime(self.df['date'])
-        self.df['fast_insulin'] = (self.df['bolus_insulin']
-                                   + self.df['correction_insulin'])
-        self.df['total_insulin'] = (self.df['fast_insulin']
-                                    + self.df['basal_insulin'])
-        self.df['carbs'] = self.df['meal'].apply(lambda m: sum(m.values()))
+        self.df["date"] = pd.to_datetime(self.df["date"])
+        self.df["fast_insulin"] = (self.df["bolus_insulin"]
+                                   + self.df["correction_insulin"])
+        self.df["total_insulin"] = (self.df["fast_insulin"]
+                                    + self.df["basal_insulin"])
+        self.df["carbs"] = self.df["meal"].apply(lambda m: sum(m.values()))
         self.df.sort_values(by="date", ascending=True, inplace=True)
 
     def format_line(self, line):
@@ -55,7 +55,7 @@ class DiaguardCSVParser():
         Remove double quotes and semicolons from a line and split it into a
         list of semicolon-separated values
         """
-        def clear_chars(s): return re.sub(r"^\"|\"$", "", s)
+        def clear_chars(s): return re.sub(r"^\"|\"$", '', s)
         line = list(map(clear_chars, line.split(';')))
         return line[0], line[1:]
 
@@ -70,7 +70,7 @@ class DiaguardCSVParser():
         An entry consists of many lines that describe some or all of the
         following information:
         - date (datetime): when the entry was created
-        - comments (string): comments provided by the user (default: "")
+        - comments (string): comments provided by the user (default: '')
         - measurement: measurement in one of the following categories
             - bloodsugar (int): glucose in mg/dL
             - insulin (tuple of 3 ints): injected bolus, correction and basal
@@ -92,13 +92,13 @@ class DiaguardCSVParser():
             if field == "measurement":
                 category = values[0]
                 if category == "bloodsugar":
-                    glucose = int(values[1])
+                    glucose = int(float(values[1]))
                 elif category == "insulin":
-                    insulin = tuple(map(lambda x: int(x)), values[1:4])
+                    insulin = tuple(map(lambda x: int(float(x)), values[1:4]))
                 elif category == "meal":
                     meal["carbs"] = float(values[1])
                 elif category == "activity":
-                    activity = int(values[1])
+                    activity = int(float(values[1]))
                 elif category == "hba1c":
                     hba1c = float(values[1])
             elif field == "foodEaten":
@@ -158,6 +158,7 @@ class DataFrameHandler():
         """Count total number of entries"""
         return self.df.count().max()
 
+    # TODO turn groupbys into attributes only updated when df is updated
     def groupby_hour(self):
         """Group df by hour of the day"""
         return self.df.groupby(self.df["date"].dt.hour)
@@ -215,17 +216,16 @@ class DataFrameHandler():
         self.df = self.df[self.df["comments"].astype(bool)]
         return self
 
-    def date(self, lower_bound: str = '1990-01-01',
-             upper_bound: str = '2100-01-01'):
+    def date(self, lower_bound: str = "1990-01-01",
+             upper_bound: str = "2100-01-01"):
         """Filter by date in format YYYY-MM-DD"""
-        self.df = self.df[(self.df['date'] >= lower_bound)
-                          & (self.df['date'] < upper_bound)]
+        self.df = self.df[(self.df["date"] >= lower_bound)
+                          & (self.df["date"] < upper_bound)]
         return self
 
     def last_x_days(self, x: int):
-        """Select all entries in the last x days"""
-        # TODO pegar data recente
-        now = pd.Timestamp.now()
+        """Select all entries in the most recent x days"""
+        most_recent_timestamp = self.df["date"].max()
         delta = pd.Timedelta(-x, 'd')
-        self.df = self.df[self.df["date"] > now + delta]
+        self.df = self.df[self.df["date"] > most_recent_timestamp + delta]
         return self
