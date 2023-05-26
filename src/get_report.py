@@ -1,8 +1,6 @@
+import sys
 import argparse
-from .explorer import Explorer
-from .reporters.json_reporter import JSONReporter
-from .reporters.raw_reporter import RawReporter
-from .reporters.pdf_reporter import PDFReporter
+from tools_aibg import JSONReportCreator, PDFReportCreator
 
 
 def get_args():
@@ -19,13 +17,18 @@ def get_args():
 def get_report(args=None):
     if args is None:
         args = get_args()
-    exp = Explorer(verbose=args.verbose)
+
+    input = sys.stdin
 
     if args.format == "json":
-        reporter = JSONReporter(exp)
-    elif args.format == "raw":
-        reporter = RawReporter(exp)
+        output = open("output.json", "w")
+        reporter = JSONReportCreator(input)
     elif args.format == "pdf":
-        reporter = PDFReporter(exp)
+        output = open("output.pdf", "wb")
+        reporter = PDFReportCreator(input)
 
-    reporter.report()
+    reporter.report(output)
+
+
+if __name__ == "__main__":
+    get_report()
