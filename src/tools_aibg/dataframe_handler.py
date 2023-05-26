@@ -158,7 +158,6 @@ class DataFrameHandler():
         """Count total number of entries"""
         return self.df.count().max()
 
-    # TODO turn groupbys into attributes only updated when df is updated
     def groupby_hour(self):
         """Group df by hour of the day"""
         return self.df.groupby(self.df["date"].dt.hour)
