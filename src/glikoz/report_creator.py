@@ -146,7 +146,7 @@ class ReportCreator():
 class JSONReportCreator(ReportCreator):
     """ReportCreator for JSON files"""
 
-    def report(self, target: TextIO):
+    def create_report(self, target: TextIO):
         """Dump base report dict into target JSON file"""
         json.dump(self.report_as_dict, target)
 
@@ -245,7 +245,7 @@ class PDFReportCreator(ReportCreator):
 
             self.pdf.savefig(fig)
 
-    def report(self, target: BinaryIO):
+    def create_report(self, target: BinaryIO):
         """Create PDF report to be saved in target file/buffer"""
         self.pdf = backend_pdf.PdfPages(target)
 

@@ -27,7 +27,7 @@ def get_report(args=None):
         output = open("output.pdf", "wb")
         reporter = PDFReportCreator(input)
 
-    reporter.report(output)
+    reporter.create_report(output)
 
 
 if __name__ == "__main__":
