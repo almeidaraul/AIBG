@@ -41,3 +41,26 @@ class TestReportCreator:
 
     def test_save_mean_glucose_by_hour_all_series_are_numeric(self):
         pass
+
+    def test_fill_report_with_random_handler(self, random_handler):
+        pass
+
+    def test_fill_report_with_empty_handler(self):
+        pass
+
+
+class TestJSONReportCreator:
+    def test_create_report_with_random_handler(self, random_handler):
+        pass
+
+    def test_create_report_with_empty_handler(self):
+        pass
+
+
+class TestPDFReportCreator:
+    def test_create_report_with_random_handler(self, random_handler):
+        assert random_handler is not None
+        pass
+
+    def test_create_report_with_empty_handler(self):
+        pass
