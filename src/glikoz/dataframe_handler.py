@@ -34,8 +34,12 @@ class DiaguardCSVParser():
         self.foods = {}  # format: `food: carbs (g) per 100g`
         self.entries = []
         self.csv_lines = [self.format_line(ln.strip()) for ln in f.readlines()]
+
+    def parse_csv(self) -> pd.DataFrame:
+        """Parse the CSV file and initialize the entry DataFrame"""
         self.process_lines()
         self.init_df()
+        return self.df
 
     def init_df(self):
         """Initialize the entry DataFrame, sorted by ascending date
@@ -151,7 +155,7 @@ class DataFrameHandler():
         Two versions of the dataframe are kept: the original one, and one with
         filter applied. This allows users to use the reset_df function
         """
-        self.original_df = DiaguardCSVParser(f).df
+        self.original_df = DiaguardCSVParser(f).parse_csv()
         self.df = self.original_df.copy()
 
     def count(self):

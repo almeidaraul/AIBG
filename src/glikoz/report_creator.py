@@ -23,7 +23,6 @@ class ReportCreator():
     def __init__(self, f: TextIO):
         self.df_handler = DataFrameHandler(f)
         self.report_as_dict = {}
-        self.fill_report()
 
     def reset_df(self, day_count: int = None):
         """Remove filters from the DataFrame

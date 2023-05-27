@@ -51,8 +51,9 @@ from glikoz import DiaguardCSVParser
 
 csv = open("diaguard_export.csv", 'r')
 parser = DiaguardCSVParser(csv)
+df = parser.parse_csv()
 
-print(parser.df.describe())
+print(df.describe())
 ```
 
 ## 🎈 Usage <a name="usage"></a>
@@ -64,6 +65,7 @@ from glikoz import PDFReportCreator
 
 # initialize report creator
 report_creator = PDFReportCreator(sys.stdin)
+report_creator.fill_report()
 
 # create report and save it to report.pdf
 output = open("report.pdf", "wb")

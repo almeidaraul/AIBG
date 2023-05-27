@@ -1,6 +1,6 @@
 import sys
 import argparse
-from tools_aibg import JSONReportCreator, PDFReportCreator
+from glikoz import JSONReportCreator, PDFReportCreator
 
 
 def get_args():
@@ -27,6 +27,7 @@ def get_report(args=None):
         output = open("output.pdf", "wb")
         reporter = PDFReportCreator(input)
 
+    reporter.fill_report()
     reporter.create_report(output)
 
 
