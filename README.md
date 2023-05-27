@@ -8,9 +8,11 @@
 <div align="center">
 
   [![Status](https://img.shields.io/badge/status-active-success.svg)]() 
-  [![GitHub Issues](https://img.shields.io/github/issues/almeidaraul/glikoz.svg)](https://github.com/almeidaraul/glikoz/issues)
-  [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/almeidaraul/glikoz.svg)](https://github.com/almeidaraul/glikoz/pulls)
+  [![GitHub Issues](https://img.shields.io/github/issues/almeidaraul/glikoz)](https://github.com/almeidaraul/glikoz/issues)
+  [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/almeidaraul/glikoz)](https://github.com/almeidaraul/glikoz/pulls)
   [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+
+  https://github.com/almeidaraul/glikoz/pulls
 
 </div>
 
