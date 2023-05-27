@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends import backend_pdf
 from typing import BinaryIO, TextIO, Final
 
-from .dataframe_handler import DataFrameHandler
+from .dataframe_handler import DiaguardCSVParser, DataFrameHandler
 
 
 class ReportCreator():
@@ -21,7 +21,9 @@ class ReportCreator():
     """
 
     def __init__(self, f: TextIO):
-        self.df_handler = DataFrameHandler(f)
+        df = DiaguardCSVParser(f).parse_csv()
+        self.df_handler = DataFrameHandler(df)
+        print(self.df_handler.df.info())
         self.report_as_dict = {}
 
     def reset_df(self, day_count: int = None):

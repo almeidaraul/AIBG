@@ -149,18 +149,18 @@ class DataFrameHandler():
     This class provides many filter functions which conform to method chaining
     """
 
-    def __init__(self, f: TextIO):
+    def __init__(self, entry_df: pd.DataFrame):
         """Constructs the entry dataframe, sorted by ascending datetime
 
         Two versions of the dataframe are kept: the original one, and one with
         filter applied. This allows users to use the reset_df function
         """
-        self.original_df = DiaguardCSVParser(f).parse_csv()
+        self.original_df = entry_df
         self.df = self.original_df.copy()
 
     def count(self):
         """Count total number of entries"""
-        return self.df.count().max()
+        return len(self.df)
 
     def groupby_hour(self):
         """Group df by hour of the day"""
