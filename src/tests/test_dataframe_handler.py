@@ -9,7 +9,7 @@ from glikoz import dataframe_handler
 @pytest.fixture(scope="function")
 def random_handler():
     """Generate a DataFrameHandler from a random valid DataFrame"""
-    number_of_samples = 40
+    number_of_samples = 40000
     datetime_strf = "%d/%m/%Y %H:%M"
     datetime_range = (datetime.strptime("01/01/2020 00:00", datetime_strf),
                       datetime.strptime("20/05/2023 23:59", datetime_strf))
