@@ -8,7 +8,7 @@ from typing import BinaryIO, TextIO, Final
 from .dataframe_handler import DiaguardCSVParser, DataFrameHandler
 
 
-class ReportCreator():
+class ReportCreator:
     """Base report creator class
 
     This class' methods can be split into three categories:
@@ -75,7 +75,9 @@ class ReportCreator():
 
     def save_entry_count(self):
         """Compute and store total and mean daily number of entries"""
+        # TODO is this numeric?
         total_entries: int = self.df_handler.count()
+        # TODO rename to by_day
         entries_per_day = self.df_handler.groupby_day()["date"].count().mean()
         self.store("total_entries", total_entries)
         self.store("entries_per_day", entries_per_day)
@@ -85,6 +87,7 @@ class ReportCreator():
         fast_insulin_sum = self.df_handler.groupby_day()["fast_insulin"].sum()
         mean_fast_insulin_per_day: float = fast_insulin_sum.mean()
         std_fast_insulin_per_day: float = fast_insulin_sum.std()
+        # TODO rename to by_day
         self.store("mean_fast_insulin_per_day", mean_fast_insulin_per_day)
         self.store("std_fast_insulin_per_day", std_fast_insulin_per_day)
 

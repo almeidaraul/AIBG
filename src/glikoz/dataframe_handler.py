@@ -3,7 +3,7 @@ import pandas as pd
 from typing import TextIO, List
 
 
-class DiaguardCSVParser():
+class DiaguardCSVParser:
     """Parses a Diaguard CSV backup file into a DataFrame
 
     Each row in the produced dataframe is an entry. Its columns are:
@@ -143,7 +143,7 @@ class DiaguardCSVParser():
                 i = i+1
 
 
-class DataFrameHandler():
+class DataFrameHandler:
     """Handler for manipulating the entry DataFrame
 
     This class provides many filter functions which conform to method chaining
