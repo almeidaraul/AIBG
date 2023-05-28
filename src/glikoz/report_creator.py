@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends import backend_pdf
 from typing import BinaryIO, TextIO, Final
 
-from .dataframe_handler import DiaguardCSVParser, DataFrameHandler
+from .dataframe_handler import DataFrameHandler
 
 
 class ReportCreator:
@@ -20,10 +20,8 @@ class ReportCreator:
         specific format (overwritten by child classes)
     """
 
-    def __init__(self, f: TextIO):
-        df = DiaguardCSVParser(f).parse_csv()
-        self.df_handler = DataFrameHandler(df)
-        print(self.df_handler.df.info())
+    def __init__(self, dataframe_handler: DataFrameHandler):
+        self.df_handler = dataframe_handler
         self.report_as_dict = {}
 
     def reset_df(self, day_count: int = None):
@@ -38,6 +36,10 @@ class ReportCreator:
     def store(self, key: str, value: any):
         """Store value in report, indexed by key"""
         self.report_as_dict[key] = value
+
+    def retrieve(self, key: str, default_value: any = None):
+        """Retrieve value from report, or default_value if key missing"""
+        return self.report_as_dict.get(key, default_value)
 
     def save_hba1c(self):
         """
@@ -54,8 +56,11 @@ class ReportCreator:
         Care. 31 (8): 1473-78).
         """
         self.df_handler.last_x_days(90)
-        glucose = self.df_handler.df["glucose"]
-        hba1c = (glucose.mean()+46.7)/28.7
+        glucose = self.df_handler.df["glucose"].dropna()
+        if glucose.empty:
+            hba1c = None
+        else:
+            hba1c = (glucose.mean()+46.7)/28.7
         self.store("hba1c", hba1c)
 
     def save_tir(self, lower_bound: int = 70, upper_bound: int = 180):
@@ -75,31 +80,49 @@ class ReportCreator:
 
     def save_entry_count(self):
         """Compute and store total and mean daily number of entries"""
-        # TODO is this numeric?
-        total_entries: int = self.df_handler.count()
-        # TODO rename to by_day
-        entries_per_day = self.df_handler.groupby_day()["date"].count().mean()
-        self.store("total_entries", total_entries)
-        self.store("entries_per_day", entries_per_day)
+        # TODO self.df_handler.empty_df()
+        if self.df_handler.df.empty:
+            entry_count = 0
+            mean_daily_entry_count = 0.
+        else:
+            entry_count = self.df_handler.count()
+            dates_grouped_by_day = self.df_handler.groupby_day()["date"]
+            mean_daily_entry_count = dates_grouped_by_day.count().mean()
+        self.store("entry_count", entry_count)
+        self.store("mean_daily_entry_count", mean_daily_entry_count)
 
     def save_fast_insulin_use(self):
         """Compute and store daily fast insulin use (mean and std dev)"""
-        fast_insulin_sum = self.df_handler.groupby_day()["fast_insulin"].sum()
-        mean_fast_insulin_per_day: float = fast_insulin_sum.mean()
-        std_fast_insulin_per_day: float = fast_insulin_sum.std()
-        # TODO rename to by_day
-        self.store("mean_fast_insulin_per_day", mean_fast_insulin_per_day)
-        self.store("std_fast_insulin_per_day", std_fast_insulin_per_day)
+        if self.df_handler.df.empty:
+            mean_daily_fast_insulin = 0.
+            std_daily_fast_insulin = 0.
+        else:
+            groupby = self.df_handler.groupby_day()
+            fast_insulin_sum = groupby["fast_insulin"].sum()
+            mean_daily_fast_insulin = fast_insulin_sum.mean()
+            std_daily_fast_insulin = fast_insulin_sum.std()
+        self.store("mean_daily_fast_insulin", mean_daily_fast_insulin)
+        self.store("std_daily_fast_insulin", std_daily_fast_insulin)
 
     def save_mean_glucose_by_hour(self):
         """Compute and store mean and std dev of glucose by hour"""
         df = self.df_handler.df[["date", "glucose"]].dropna()
-        glucose_by_hour = df.groupby(df["date"].dt.hour)
-        glucose_by_hour_series = {
-            "mean_glucose": glucose_by_hour.mean().fillna(0)["glucose"].values,
-            "hour": glucose_by_hour.groups.keys(),
-            "std_error": glucose_by_hour.std().fillna(0)["glucose"].values,
-        }
+        if df.empty:
+            glucose_by_hour_series = {
+                "mean_glucose": np.array([]),
+                "hour": np.array([]),
+                "std_error": np.array([])
+            }
+        else:
+            glucose_by_hour = df.groupby(df["date"].dt.hour)
+            mean_glucose = glucose_by_hour.mean().fillna(0)["glucose"]
+            hour = list(glucose_by_hour.groups.keys())
+            std_error = glucose_by_hour.std().fillna(0)["glucose"]
+            glucose_by_hour_series = {
+                "mean_glucose": mean_glucose.values,
+                "hour": np.array(hour),
+                "std_error": std_error.values,
+            }
         self.store("glucose_by_hour_series", glucose_by_hour_series)
 
     def save_entries_df(self):
@@ -152,14 +175,26 @@ class JSONReportCreator(ReportCreator):
 
     def create_report(self, target: TextIO):
         """Dump base report dict into target JSON file"""
+        entries_df = self.retrieve("entries_dataframe")
+        self.store("entries_dataframe", entries_df.to_json())
+        glucose_by_hour_series = self.retrieve("glucose_by_hour_series")
+        for series in glucose_by_hour_series.keys():
+            as_list = list(glucose_by_hour_series[series])
+            as_python_int = map(int, as_list)
+            glucose_by_hour_series[series] = list(as_python_int)
+        self.store("glucose_by_hour_series", glucose_by_hour_series)
+        for key, value in self.report_as_dict.items():
+            if value is not None and np.issubdtype(type(value), np.number):
+                self.report_as_dict[key] = int(value)
+        print(self.report_as_dict)
         json.dump(self.report_as_dict, target)
 
 
 class PDFReportCreator(ReportCreator):
     """ReportCreator for PDF files"""
 
-    def __init__(self, f: TextIO):
-        super().__init__(f)
+    def __init__(self, dataframe_handler: DataFrameHandler):
+        super().__init__(dataframe_handler)
         self.A5_FIGURE_SIZE: Final = (8.27, 5.83)
         self.PAGE_SIZE: Final = self.A5_FIGURE_SIZE
 
@@ -169,18 +204,23 @@ class PDFReportCreator(ReportCreator):
         plt.subplot2grid((2, 1), (0, 0))
 
         plt.text(0, 1, "Statistics", ha="left", va="top", fontsize=28)
-        hba1c_value = self.report_as_dict["hba1c"]
-        plt.text(0, 0.8, f"HbA1c (last 3 months): {hba1c_value:.2f}%",
+        hba1c_value = self.retrieve("hba1c")
+        if hba1c_value is None:
+            hba1c_as_str = "N/A"
+        else:
+            hba1c_as_str = f"{hba1c_value:.2f}"
+        plt.text(0, 0.8, f"HbA1c (last 3 months): {hba1c_as_str}%",
                  ha="left", va="top")
         plt.text(0, 0.7, "Last 5 days", ha="left", va="top")
-        total_entries = self.report_as_dict["total_entries"]
-        entries_per_day = self.report_as_dict["entries_per_day"]
+        entry_count = self.retrieve("entry_count")
+        mean_daily_entry_count = self.retrieve("mean_daily_entry_count")
         plt.text(
             0, 0.6,
-            f"Total entries: {total_entries}, per day: {entries_per_day:.2f}",
+            (f"Total entries: {entry_count},"
+             + f" per day: {mean_daily_entry_count:.2f}"),
             ha="left", va="top")
-        fast_per_day = self.report_as_dict["mean_fast_insulin_per_day"]
-        std_fast_per_day = self.report_as_dict["std_fast_insulin_per_day"]
+        fast_per_day = self.retrieve("mean_daily_fast_insulin")
+        std_fast_per_day = self.retrieve("std_daily_fast_insulin")
         plt.text(
             0, 0.5,
             f"Fast insulin/day: {fast_per_day:.2f} ± {std_fast_per_day:.2f}",
@@ -193,17 +233,21 @@ class PDFReportCreator(ReportCreator):
         plt.subplot2grid((2, 1), (1, 0), aspect="equal")
 
         labels = ["Above range", "Below range", "In range"]
-        sizes = [self.report_as_dict["time_above_range"],
-                 self.report_as_dict["time_below_range"],
-                 self.report_as_dict["time_in_range"]]
+        sizes = [self.retrieve("time_above_range"),
+                 self.retrieve("time_below_range"),
+                 self.retrieve("time_in_range")]
 
         total = sum(sizes)
-        percentages = list(map(lambda x: f"{100*x/total:.2f}%", sizes))
+        if total == 0:
+            plt.text(.7, 0, "Time in Range graph not available", ha="center",
+                     va="bottom", fontsize=14)
+        else:
+            percentages = list(map(lambda x: f"{100*x/total:.2f}%", sizes))
 
-        colors = ["tab:red", "tab:blue", "tab:olive"]
+            colors = ["tab:red", "tab:blue", "tab:olive"]
 
-        plt.pie(sizes, labels=percentages, colors=colors)
-        plt.legend(labels, loc="best", bbox_to_anchor=(1, 0, 1, 1))
+            plt.pie(sizes, labels=percentages, colors=colors)
+            plt.legend(labels, loc="best", bbox_to_anchor=(1, 0, 1, 1))
         self.pdf.savefig(fig)
 
     def plot_glucose_by_hour_graph(self):
@@ -211,9 +255,9 @@ class PDFReportCreator(ReportCreator):
         fig = plt.figure(figsize=self.PAGE_SIZE)
         ax = fig.add_subplot(1, 1, 1)
 
-        hour = self.report_as_dict["glucose_by_hour_series"]["hour"]
-        glucose = self.report_as_dict["glucose_by_hour_series"]["mean_glucose"]
-        std = self.report_as_dict["glucose_by_hour_series"]["std_error"]
+        hour = self.retrieve("glucose_by_hour_series")["hour"]
+        glucose = self.retrieve("glucose_by_hour_series")["mean_glucose"]
+        std = self.retrieve("glucose_by_hour_series")["std_error"]
 
         ax.errorbar(hour, glucose, yerr=std, fmt="-o",
                     capsize=3, elinewidth=2, capthick=2, color="royalblue",
@@ -231,8 +275,8 @@ class PDFReportCreator(ReportCreator):
 
     def write_entries_dataframe(self):
         """Plot the entries DataFrame"""
-        columns = list(self.report_as_dict["entries_dataframe"].keys())
-        entries_nparray = np.array(self.report_as_dict["entries_dataframe"])
+        columns = list(self.retrieve("entries_dataframe").keys())
+        entries_nparray = np.array(self.retrieve("entries_dataframe"))
         rows_per_page = 20
         num_steps = len(entries_nparray) // rows_per_page
         if rows_per_page * num_steps < len(entries_nparray):

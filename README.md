@@ -50,8 +50,8 @@ And then use its modules in your own program:
 from glikoz import DiaguardCSVParser
 
 csv = open("diaguard_export.csv", 'r')
-parser = DiaguardCSVParser(csv)
-df = parser.parse_csv()
+parser = DiaguardCSVParser()
+df = parser.parse_csv(csv)
 
 print(df.describe())
 ```
@@ -61,10 +61,15 @@ Using **glikoz** is as simple as instantiating a `ReportCreator` object with som
 
 ```python
 import sys
-from glikoz import PDFReportCreator
+from glikoz import DiaguardCSVParser, DataFrameHandler, PDFReportCreator
 
+# parse a CSV into a pandas DataFrame
+parser = DiaguardCSVParser()
+csv_source = sys.stdin
+df = parser.parse_csv(csv_source)
+df_handler = DataFrameHandler(df)
 # initialize report creator
-report_creator = PDFReportCreator(sys.stdin)
+report_creator = PDFReportCreator(df_handler)
 report_creator.fill_report()
 
 # create report and save it to report.pdf

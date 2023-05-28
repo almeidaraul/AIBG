@@ -1,13 +1,15 @@
 import pandas as pd
 import pytest
+from io import BytesIO, StringIO
 from datetime import datetime, timedelta
 from random import randint, randrange
+from typing import BinaryIO, TextIO
 
 from glikoz import dataframe_handler
 
 
 @pytest.fixture(scope="function")
-def random_handler():
+def random_dataframe_handler():
     """DataFrameHandler initialized with a random valid DataFrame"""
     number_of_samples = 4000
     datetime_strf = "%d/%m/%Y %H:%M"
@@ -54,6 +56,38 @@ def random_handler():
     return handler
 
 
-# TODO empty_handler
-# TODO better names for fixtures
-# TODO CSV fixtures (valid&random, empty, invalid)
+@pytest.fixture(scope="function")
+def empty_dataframe_handler() -> dataframe_handler.DataFrameHandler:
+    df = pd.DataFrame(columns=[
+        "date", "glucose", "bolus_insulin", "correction_insulin",
+        "basal_insulin", "activity", "hba1c", "meal", "tags", "comments",
+        "carbs", "fast_insulin", "total_insulin"
+    ])
+    handler = dataframe_handler.DataFrameHandler(df)
+
+    return handler
+
+
+@pytest.fixture(scope="function")
+def binaryIO_buffer() -> BinaryIO:
+    return BytesIO()
+
+
+@pytest.fixture(scope="function")
+def textIO_buffer() -> TextIO:
+    return StringIO()
+
+
+@pytest.fixture(scope="function")
+def valid_random_diaguard_csv_backup() -> TextIO:
+    pass
+
+
+@pytest.fixture(scope="function")
+def invalid_random_diaguard_csv_backup() -> TextIO:
+    pass
+
+
+@pytest.fixture(scope="function")
+def empty_csv() -> TextIO:
+    pass

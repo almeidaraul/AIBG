@@ -22,6 +22,10 @@ class DiaguardCSVParser:
     - comments: string providing considerations on the recorded entry
     """
     def __init__(self, f: TextIO):
+        self.foods = {}
+        self.entries = []
+
+    def parse_csv(self, csv: TextIO) -> pd.DataFrame:
         """Reads a Diaguard backup CSV file and creates its entry DataFrame
 
         Attributes created:
@@ -31,12 +35,8 @@ class DiaguardCSVParser:
         later used in constructing the dataframe itself)
         - csv_lines: a list of preprocessed lines from the CSV backup
         """
-        self.foods = {}  # format: `food: carbs (g) per 100g`
-        self.entries = []
-        self.csv_lines = [self.format_line(ln.strip()) for ln in f.readlines()]
-
-    def parse_csv(self) -> pd.DataFrame:
-        """Parse the CSV file and initialize the entry DataFrame"""
+        raw_lines = csv.readlines()
+        self.csv_lines = [self.format_line(ln.strip()) for ln in raw_lines]
         self.process_lines()
         self.init_df()
         return self.df

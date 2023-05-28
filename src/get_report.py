@@ -1,6 +1,6 @@
 import sys
 import argparse
-from glikoz import JSONReportCreator, PDFReportCreator
+import glikoz
 
 
 def get_args():
@@ -18,14 +18,16 @@ def get_report(args=None):
     if args is None:
         args = get_args()
 
-    input = sys.stdin
+    csv = sys.stdin
+    df = glikoz.DiaguardCSVParser().parse_csv(csv)
+    df_handler = glikoz.DataFrameHandler(df)
 
     if args.format == "json":
         output = open("output.json", "w")
-        reporter = JSONReportCreator(input)
+        reporter = glikoz.JSONReportCreator(df_handler)
     elif args.format == "pdf":
         output = open("output.pdf", "wb")
-        reporter = PDFReportCreator(input)
+        reporter = glikoz.PDFReportCreator(df_handler)
 
     reporter.fill_report()
     reporter.create_report(output)
