@@ -2,5 +2,5 @@ matplotlib==3.5.1
 numpy==1.22.1
 numpy==1.22.3
 pandas==1.4.0
-setuptools==44.0.0
+setuptools==65.5.1
 setuptools==65.5.1
