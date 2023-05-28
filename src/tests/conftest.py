@@ -90,4 +90,4 @@ def invalid_random_diaguard_csv_backup() -> TextIO:
 
 @pytest.fixture(scope="function")
 def empty_csv() -> TextIO:
-    pass
+    return StringIO()
