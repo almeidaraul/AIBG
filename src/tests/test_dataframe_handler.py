@@ -1,19 +1,65 @@
+import pandas as pd
+
+from glikoz.dataframe_handler import DiaguardCSVParser
+
+
 class TestDiaguardCSVParser:
-    def test_empty_csv(self):
-        pass
+    expected_columns = {
+        "date", "glucose", "bolus_insulin", "correction_insulin",
+        "basal_insulin", "activity", "hba1c", "meal", "tags",
+        "comments", "carbs", "fast_insulin", "total_insulin"
+    }
 
-    def test_csv_without_entries(self):
-        pass
+    def test_empty_csv(self, empty_csv):
+        parser = DiaguardCSVParser()
+        df = parser.parse_csv(empty_csv)
+        assert isinstance(df, pd.DataFrame)
+        assert df.empty
+        assert set(df.columns) == self.expected_columns
 
-    def test_valid_csv_glucose_entry_count(self):
+    def test_csv_without_entries(self, diaguard_csv_backup_without_entries):
+        parser = DiaguardCSVParser()
+        df = parser.parse_csv(diaguard_csv_backup_without_entries)
+        assert isinstance(df, pd.DataFrame)
+        assert df.empty
+        assert set(df.columns) == self.expected_columns
+
+    def test_csv_without_header(self, diaguard_csv_backup_without_header):
+        parser = DiaguardCSVParser()
+        df = parser.parse_csv(diaguard_csv_backup_without_header)
+        assert isinstance(df, pd.DataFrame)
+        assert set(df.columns) == self.expected_columns
+        assert not df.empty
+
+    def test_csv_without_entry_start_on_first_entry(
+            self, diaguard_csv_backup_without_entry_start_on_first_entry):
+        parser = DiaguardCSVParser()
+        df = parser.parse_csv(
+            diaguard_csv_backup_without_entry_start_on_first_entry)
+        assert isinstance(df, pd.DataFrame)
+        assert set(df.columns) == self.expected_columns
+        assert not df.empty
+
+    def test_csv_with_invalid_date(
+            self, diaguard_csv_backup_with_invalid_date_field_on_last_entry):
+        parser = DiaguardCSVParser()
+        df = parser.parse_csv(
+            diaguard_csv_backup_with_invalid_date_field_on_last_entry)
+        assert isinstance(df, pd.DataFrame)
+        assert set(df.columns) == self.expected_columns
+        assert not df.empty
+
+    def test_valid_csv_glucose_entry_count(self,
+                                           valid_random_diaguard_csv_backup):
         """
         Number of DataFrame rows with glucose values and CSV lines with
         bloodsugar field should be equal
         """
-        pass
-
-    def test_invalid_csv(self):
-        pass
+        parser = DiaguardCSVParser()
+        df = parser.parse_csv(valid_random_diaguard_csv_backup)
+        buffer_value = valid_random_diaguard_csv_backup.getvalue()
+        bloodsugar_lines = buffer_value.count("bloodsugar")
+        assert bloodsugar_lines == df["glucose"].count()
 
 
 class TestDataFrameHandler:

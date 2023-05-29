@@ -80,7 +80,6 @@ class ReportCreator:
 
     def save_entry_count(self):
         """Compute and store total and mean daily number of entries"""
-        # TODO self.df_handler.empty_df()
         if self.df_handler.df.empty:
             entry_count = 0
             mean_daily_entry_count = 0.

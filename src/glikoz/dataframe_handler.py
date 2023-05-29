@@ -1,3 +1,4 @@
+import datetime
 import re
 import pandas as pd
 from typing import TextIO, List
@@ -21,7 +22,7 @@ class DiaguardCSVParser:
     - tags: list of strings that tag the entry
     - comments: string providing considerations on the recorded entry
     """
-    def __init__(self, f: TextIO):
+    def __init__(self):
         self.foods = {}
         self.entries = []
 
@@ -38,7 +39,14 @@ class DiaguardCSVParser:
         raw_lines = csv.readlines()
         self.csv_lines = [self.format_line(ln.strip()) for ln in raw_lines]
         self.process_lines()
-        self.init_df()
+        if len(self.entries) > 0:
+            self.init_df()
+        else:
+            self.df = pd.DataFrame(columns=[
+                "date", "glucose", "bolus_insulin", "correction_insulin",
+                "basal_insulin", "activity", "hba1c", "meal", "tags",
+                "comments", "carbs", "fast_insulin", "total_insulin"
+            ])
         return self.df
 
     def init_df(self):
@@ -87,6 +95,10 @@ class DiaguardCSVParser:
         The end of valid field names indicates the end of an entry.
         """
         date, comments = content[:2]
+        try:
+            datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return i+1
         glucose, activity, hba1c = None, 0, None
         insulin = (0,)*3  # bolus, correction, basal
         meal = {}
@@ -108,6 +120,8 @@ class DiaguardCSVParser:
             elif field == "foodEaten":
                 food_eaten = values[0].lower()
                 food_weight = float(values[1])
+                if food_eaten not in self.foods:
+                    self.foods[food_eaten] = 0
                 carb_ratio = self.foods[food_eaten]/100
                 meal[food_eaten] = food_weight * carb_ratio
             elif field == "entryTag":
