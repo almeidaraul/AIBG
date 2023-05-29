@@ -56,6 +56,9 @@ df = parser.parse_csv(csv)
 print(df.describe())
 ```
 
+## 🔧 Running the tests <a name = "tests"></a>
+Automated tests are implemented with PyTest. After installing project requirements, run `pytest` from the `src` directory.
+
 ## 🎈 Usage <a name="usage"></a>
 Using **glikoz** is as simple as instantiating a `ReportCreator` object with some input CSV (exported from Diaguard) and creating a report with it:
 
