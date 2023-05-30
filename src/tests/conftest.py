@@ -3,7 +3,7 @@ import pytest
 from io import BytesIO, StringIO
 from datetime import datetime, timedelta
 from random import randint, randrange
-from typing import BinaryIO, TextIO
+from typing import BinaryIO, TextIO, List
 
 from glikoz import dataframe_handler
 
@@ -84,7 +84,7 @@ def random_date(start: datetime, end: datetime) -> datetime:
     return start + timedelta(seconds=randrange(int_delta))
 
 
-def random_entries(number_of_entries: int) -> list:
+def random_entries(number_of_entries: int) -> List[List[str]]:
     entries = []
     base = []
     base.append('"meta";"23"')
