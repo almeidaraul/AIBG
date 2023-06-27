@@ -124,6 +124,32 @@ class ReportCreator:
             }
         self.store("glucose_by_hour_series", glucose_by_hour_series)
 
+    def save_tir_by_hour(self, lower_bound: int = 70, upper_bound: int = 180):
+        """Compute and store the time in range for each hour of the day"""
+        time_above_range_by_hour = np.array([0]*24)
+        time_below_range_by_hour = np.array([0]*24)
+        time_in_range_by_hour = np.array([0]*24)
+        if not self.df_handler.df.empty:
+            # return self.df.groupby(self.df["date"].dt.hour)
+            glucose = self.df_handler.df["glucose"].dropna()
+            groupby_param = self.df_handler.df["date"].dt.hour
+            time_above_range_by_hour_count = glucose[glucose >= upper_bound
+                ].groupby(groupby_param).count()
+            for hour, count in time_above_range_by_hour_count.iteritems():
+                time_above_range_by_hour[hour] = count
+            time_below_range_by_hour_count = glucose[glucose < lower_bound
+                ].groupby(groupby_param).count()
+            for hour, count in time_below_range_by_hour_count.iteritems():
+                time_below_range_by_hour[hour] = count
+            time_in_range_by_hour_count = glucose[
+                (glucose >= lower_bound) & (glucose < upper_bound)
+                ].groupby(groupby_param).count()
+            for hour, count in time_in_range_by_hour_count.iteritems():
+                time_in_range_by_hour[hour] = count
+        self.store("time_above_range_by_hour", time_above_range_by_hour)
+        self.store("time_below_range_by_hour", time_below_range_by_hour)
+        self.store("time_in_range_by_hour", time_in_range_by_hour)
+
     def save_entries_df(self):
         """Compute and store DataFrame of all entries"""
         def meal_to_str(meal): return "; ".join(
@@ -147,7 +173,8 @@ class ReportCreator:
         df["meal"] = df["meal"].apply(meal_to_str)
         df["date"] = df["date"].apply(epoch_to_datetime)
         for c in number_columns:
-            df[c] = df[c].fillna(0).apply(lambda x: str(x) if x != 0 else '')
+            df[c] = df[c].fillna(0).apply(
+                lambda x: f"{int(x)}" if x != 0 else '')
         # reverse order (recent entries first)
         df = df.rename(
             columns=columns_display_names)[::-1].reset_index(drop=True)
@@ -158,10 +185,11 @@ class ReportCreator:
         self.save_hba1c()
         self.reset_df(15)
         self.save_tir()
-        self.reset_df(5)
         self.save_entry_count()
         self.save_fast_insulin_use()
         self.save_mean_glucose_by_hour()
+        self.save_tir_by_hour()
+        self.reset_df(5)
         self.save_entries_df()
 
     def create_report(self):
@@ -182,6 +210,10 @@ class JSONReportCreator(ReportCreator):
             as_python_int = map(int, as_list)
             glucose_by_hour_series[series] = list(as_python_int)
         self.store("glucose_by_hour_series", glucose_by_hour_series)
+        for tir_variant in ["in", "above", "below"]:
+            key = f"time_{tir_variant}_range_by_hour"
+            value = self.retrieve(key)
+            self.store(key, list(map(int, list(value))))
         for key, value in self.report_as_dict.items():
             if value is not None and np.issubdtype(type(value), np.number):
                 self.report_as_dict[key] = int(value)
@@ -210,7 +242,7 @@ class PDFReportCreator(ReportCreator):
             hba1c_as_str = f"{hba1c_value:.2f}"
         plt.text(0, 0.8, f"HbA1c (last 3 months): {hba1c_as_str}%",
                  ha="left", va="top")
-        plt.text(0, 0.7, "Last 5 days", ha="left", va="top")
+        plt.text(0, 0.7, "Last 15 days", ha="left", va="top")
         entry_count = self.retrieve("entry_count")
         mean_daily_entry_count = self.retrieve("mean_daily_entry_count")
         plt.text(
@@ -274,23 +306,81 @@ class PDFReportCreator(ReportCreator):
 
     def write_entries_dataframe(self):
         """Plot the entries DataFrame"""
-        columns = list(self.retrieve("entries_dataframe").keys())
+        columns_display_names = {
+            "Date": "Date",
+            "Glucose": "Gluc",
+            "Bolus": "Bolus",
+            "Correction": "Corr.",
+            "Basal": "Basal",
+            "Meal": "Meal",
+            "Carbohydrates": "Carbs",
+        }
+        columns = list(map(lambda x: columns_display_names.get(x),
+                           self.retrieve("entries_dataframe").keys()))
+        colWidths = [.15, .05, .05, .05, .05, 0.75, 0.05]
         entries_nparray = np.array(self.retrieve("entries_dataframe"))
-        rows_per_page = 20
-        num_steps = len(entries_nparray) // rows_per_page
-        if rows_per_page * num_steps < len(entries_nparray):
-            num_steps += 1
-        for i in range(num_steps):
-            data = entries_nparray[i*rows_per_page:(i+1)*rows_per_page]
+        if len(entries_nparray) == 0:
+            return None
+        curr_start = 0
+        curr_date = entries_nparray[0][0].split(' ')[0]
+        intervals = []
+        for i in range(len(entries_nparray)):
+            new_date = entries_nparray[i][0].split(' ')[0]
+            if new_date != curr_date:
+                intervals.append((curr_start, i-1))
+                curr_date = new_date
+                curr_start = i
+        for a, b in intervals:
+            data = entries_nparray[a:b+1]
 
             fig = plt.figure(figsize=self.PAGE_SIZE)
             ax = fig.add_subplot(1, 1, 1)
 
-            ax.table(cellText=data, colLabels=columns, loc="center",
-                     fontsize=14)
+            table = ax.table(cellText=data, colLabels=columns, loc="center",
+                             fontsize=16, colWidths=colWidths)
+            table.scale(1, 2)
+            table.auto_set_font_size()
             ax.axis("off")
 
             self.pdf.savefig(fig)
+
+    def plot_tir_by_hour_graph(self):
+        """Plot a TIR by hour line graph"""
+        fig = plt.figure(figsize=self.PAGE_SIZE)
+        ax = fig.add_subplot(1, 1, 1)
+
+        hour = np.array(range(24))
+        in_range = self.retrieve("time_in_range_by_hour").astype("float64")
+        above_range = self.retrieve("time_above_range_by_hour").astype("float64")
+        below_range = self.retrieve("time_below_range_by_hour").astype("float64")
+        total = in_range + above_range + below_range
+        for i in range(24):
+            if total[i] > 0:
+                in_range[i] /= total[i]
+                above_range[i] /= total[i]
+                below_range[i] /= total[i]
+
+        width = .7
+        below_range_bar = ax.bar(hour, below_range, width, label="Below Range",
+                                 bottom=np.zeros(24), color="tab:blue")
+        in_range_bar = ax.bar(hour, in_range, width, label="In Range",
+                              bottom=below_range, color="tab:olive")
+        above_range_bar = ax.bar(hour, above_range, width, label="Above Range",
+                                 bottom=below_range+in_range, color="tab:red")
+
+        ax.set_title("Time in Range per Hour")
+        ax.legend(fontsize="xx-small", framealpha=.8)
+        ax.set_xlabel("Hour")
+        ax.set_ylabel("Percentage (%)")
+
+        all_hours = list(range(1, 24)) + [0]
+        ax.set_xticks(all_hours)
+        ax.set_xticklabels(list(map(lambda h: f"{h:0=2d}", all_hours)))
+
+        ax.set_yticks(list(map(lambda x: x/10, range(11))))
+        ax.set_yticklabels(list(range(0, 110, 10)))
+
+        self.pdf.savefig(fig)
 
     def create_report(self, target: BinaryIO):
         """Create PDF report to be saved in target file/buffer"""
@@ -298,6 +388,7 @@ class PDFReportCreator(ReportCreator):
 
         self.write_statistics_page()
         self.plot_glucose_by_hour_graph()
+        self.plot_tir_by_hour_graph()
         self.write_entries_dataframe()
 
         self.pdf.close()

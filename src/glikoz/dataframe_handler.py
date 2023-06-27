@@ -242,7 +242,8 @@ class DataFrameHandler:
 
     def last_x_days(self, x: int):
         """Select all entries in the most recent x days"""
-        most_recent_timestamp = self.df["date"].max()
+        most_recent_timestamp = pd.to_datetime(self.df["date"].max())
+        most_recent_timestamp.replace(hour=23, minute=59, second=59)
         delta = pd.Timedelta(-x, 'd')
         self.df = self.df[self.df["date"] > most_recent_timestamp + delta]
         return self
