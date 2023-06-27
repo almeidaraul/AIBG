@@ -138,6 +138,106 @@ class TestReportCreator:
         report_creator = ReportCreator(empty_dataframe_handler)
         report_creator.fill_report()
 
+    def test_tir_by_hour_on_empty_dataframe_handler_does_not_raise_error(
+            self, empty_dataframe_handler):
+        report_creator = ReportCreator(empty_dataframe_handler)
+        report_creator.save_tir_by_hour()
+
+    def test_tir_by_hour_on_empty_dataframe_handler_outputs_key_on_report(
+            self, empty_dataframe_handler):
+        report_creator = ReportCreator(empty_dataframe_handler)
+        report_creator.save_tir_by_hour()
+        time_above_range_by_hour = report_creator.retrieve(
+            "time_above_range_by_hour")
+        time_below_range_by_hour = report_creator.retrieve(
+            "time_below_range_by_hour")
+        time_in_range_by_hour = report_creator.retrieve(
+            "time_in_range_by_hour")
+        assert time_above_range_by_hour is not None
+        assert time_below_range_by_hour is not None
+        assert time_in_range_by_hour is not None
+
+    def test_tir_by_hour_on_empty_dataframe_handler_outputs_int_np_arrays(
+            self, empty_dataframe_handler):
+        report_creator = ReportCreator(empty_dataframe_handler)
+        report_creator.save_tir_by_hour()
+        time_above_range_by_hour = report_creator.retrieve(
+            "time_above_range_by_hour")
+        time_below_range_by_hour = report_creator.retrieve(
+            "time_below_range_by_hour")
+        time_in_range_by_hour = report_creator.retrieve(
+            "time_in_range_by_hour")
+        assert np.issubdtype(time_above_range_by_hour.dtype, np.integer)
+        assert np.issubdtype(time_below_range_by_hour.dtype, np.integer)
+        assert np.issubdtype(time_in_range_by_hour.dtype, np.integer)
+
+    def test_tir_by_hour_on_empty_dataframe_handler_arrays_sum_to_0(
+            self, empty_dataframe_handler):
+        report_creator = ReportCreator(empty_dataframe_handler)
+        report_creator.save_tir_by_hour()
+        time_above_range_by_hour = report_creator.retrieve(
+            "time_above_range_by_hour")
+        time_below_range_by_hour = report_creator.retrieve(
+            "time_below_range_by_hour")
+        time_in_range_by_hour = report_creator.retrieve(
+            "time_in_range_by_hour")
+        sum_by_hour = (time_above_range_by_hour
+                       + time_below_range_by_hour
+                       + time_in_range_by_hour)
+        assert set(sum_by_hour) == {0}
+
+    def test_tir_by_hour_values_check(
+            self, random_dataframe_handler):
+        report_creator = ReportCreator(random_dataframe_handler)
+        df = random_dataframe_handler.df
+        df["glucose"] = None
+
+        df.iloc[0, (df.columns.get_loc("glucose"))] = 100
+        report_creator.save_tir_by_hour()
+        time_in_range_by_hour = report_creator.retrieve(
+            "time_in_range_by_hour")
+        time_above_range_by_hour = report_creator.retrieve(
+            "time_above_range_by_hour")
+        time_below_range_by_hour = report_creator.retrieve(
+            "time_below_range_by_hour")
+        assert time_in_range_by_hour.sum() == 1
+        assert time_above_range_by_hour.sum() == 0
+        assert time_below_range_by_hour.sum() == 0
+
+
+    def test_tir_by_hour_on_random_dataframe_handler_does_not_raise_error(
+            self, random_dataframe_handler):
+        report_creator = ReportCreator(random_dataframe_handler)
+        report_creator.save_tir_by_hour()
+
+    def test_tir_by_hour_on_random_dataframe_handler_outputs_key_on_report(
+            self, random_dataframe_handler):
+        report_creator = ReportCreator(random_dataframe_handler)
+        report_creator.save_tir_by_hour()
+        for variant in ["in", "above", "below"]:
+            retrieved = report_creator.retrieve(
+                f"time_{variant}_range_by_hour")
+            assert retrieved is not None
+
+    def test_tir_by_hour_on_random_dataframe_handler_outputs_numeric_np_arrays(
+            self, random_dataframe_handler):
+        report_creator = ReportCreator(random_dataframe_handler)
+        report_creator.save_tir_by_hour()
+        for variant in ["in", "above", "below"]:
+            retrieved = report_creator.retrieve(
+                f"time_{variant}_range_by_hour")
+            assert isinstance(retrieved, np.ndarray)
+            assert np.issubdtype(retrieved.dtype, np.number)
+
+    def test_tir_by_hour_on_random_dataframe_handler_has_24_hours(
+            self, random_dataframe_handler):
+        report_creator = ReportCreator(random_dataframe_handler)
+        report_creator.save_tir_by_hour()
+        for variant in ["in", "above", "below"]:
+            retrieved = report_creator.retrieve(
+                f"time_{variant}_range_by_hour")
+            assert len(retrieved) == 24
+
 
 class TestJSONReportCreator:
     def test_create_report_with_random_dataframe_handler(
