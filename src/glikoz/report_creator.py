@@ -210,6 +210,18 @@ class ReportCreator:
             mean_daily_low_rate = daily_low_rate_sum / daily_low_rate_count
         self.store("mean_daily_low_rate", mean_daily_low_rate)
 
+    def save_very_low_count_and_rate(self, threshold=55):
+        """Compute and store very low glucose count and rate"""
+        very_low_count = 0
+        very_low_rate = 0.
+        if not self.df_handler.df.empty:
+            glucose = self.df_handler.df["glucose"].dropna()
+            total = glucose.count()
+            very_low_count = (glucose < threshold).sum()
+            very_low_rate = very_low_count/total
+        self.store("very_low_bg_count", very_low_count)
+        self.store("very_low_bg_rate", very_low_rate)
+
     def save_entries_df(self):
         """Compute and store DataFrame of all entries"""
         def meal_to_str(meal): return "; ".join(
@@ -293,7 +305,9 @@ class PDFReportCreator(ReportCreator):
         fig = plt.figure(figsize=self.PAGE_SIZE)
         plt.subplot2grid((2, 1), (0, 0))
 
-        plt.text(0, 1, f"Statistics (last {self.GRAPH_DAYS} days)", ha="left", va="top",
+        plt.text(0, 1, f"Report for the last {self.GRAPH_DAYS} days", ha="left", va="top",
+                 fontsize=34)
+        plt.text(0, .7, f"Statistics", ha="left", va="top",
                  fontsize=28)
         if show_hba1c:
             hba1c_value = self.retrieve("hba1c")
@@ -301,41 +315,29 @@ class PDFReportCreator(ReportCreator):
                 hba1c_as_str = "N/A"
             else:
                 hba1c_as_str = f"{hba1c_value:.2f}"
-            plt.text(0, 0.8, f"HbA1c (last 3 months): {hba1c_as_str}%",
+            plt.text(0, 0.5, f"HbA1c (last 3 months): {hba1c_as_str}%",
                     ha="left", va="top")
         entry_count = self.retrieve("entry_count")
         mean_daily_entry_count = self.retrieve("mean_daily_entry_count")
         plt.text(
-            0, 0.6,
+            0, 0.4,
             (f"Total entries: {entry_count},"
              + f" per day: {mean_daily_entry_count:.2f}"),
             ha="left", va="top")
         fast_per_day = self.retrieve("mean_daily_fast_insulin")
         std_fast_per_day = self.retrieve("std_daily_fast_insulin")
         plt.text(
-            0, 0.5,
+            0, 0.3,
             f"Fast insulin/day: {fast_per_day:.2f} ± {std_fast_per_day:.2f}",
             ha="left", va="top")
-        low_count = self.retrieve("low_bg_count")
         sizes = [self.retrieve("time_above_range"),
                  self.retrieve("time_below_range"),
                  self.retrieve("time_in_range")]
         total = sum(sizes)
-        lows_per_day = ((sizes[1]/total)
-                        * self.retrieve("mean_daily_glucose_entry_count"))
-        mean_daily_low_rate = self.retrieve("mean_daily_low_rate")
-        plt.text(
-            0, 0.4,
-            f"Hypoglycemia episodes: {low_count}",
-            ha="left", va="top")
-        plt.text(
-            0, 0.3,
-            f"Mean daily hypoglycemia rate: {100*mean_daily_low_rate:.2f}%",
-            ha="left", va="top")
         plt.axis("off")
 
         # time in range pie chart
-        plt.text(.5, 0, f"Time in Range (last {self.GRAPH_DAYS} days)",
+        plt.text(.5, 0, f"Time in Range",
                  ha="center", va="bottom", fontsize=16)
 
         plt.subplot2grid((2, 1), (1, 0), aspect="equal")
@@ -369,7 +371,7 @@ class PDFReportCreator(ReportCreator):
         ax.errorbar(hour, glucose, yerr=[mn_err, mx_err], fmt="-o",
                     capsize=3, elinewidth=2, capthick=2, color="royalblue",
                     ecolor="slategrey")
-        ax.set_title(f"Mean Glucose by Hour (last {self.GRAPH_DAYS} days)*")
+        ax.set_title(f"Mean Glucose by Hour*")
         ax.text(-.15, -.13, "*Error bars indicate maximum and minimum values",
                 transform=ax.transAxes, ha="left", va="bottom")
         ax.set_xlabel("Hour")
@@ -487,7 +489,7 @@ class PDFReportCreator(ReportCreator):
             self.report_dataframe_day("TITULO", entries_nparray[a:b+1])
 
     def plot_tir_by_hour_graph(self):
-        """Plot a TIR by hour line graph"""
+        """plot a tir by hour line graph"""
         fig = plt.figure(figsize=self.PAGE_SIZE)
         ax = fig.add_subplot(1, 1, 1)
 
@@ -505,14 +507,14 @@ class PDFReportCreator(ReportCreator):
                 below_range[i] /= total[i]
 
         width = .7
-        below_range_bar = ax.bar(hour, below_range, width, label="Below Range",
+        below_range_bar = ax.bar(hour, below_range, width, label="below range",
                                  bottom=np.zeros(24), color="tab:blue")
-        in_range_bar = ax.bar(hour, in_range, width, label="In Range",
+        in_range_bar = ax.bar(hour, in_range, width, label="in range",
                               bottom=below_range, color="tab:olive")
-        above_range_bar = ax.bar(hour, above_range, width, label="Above Range",
+        above_range_bar = ax.bar(hour, above_range, width, label="above range",
                                  bottom=below_range+in_range, color="tab:red")
 
-        ax.set_title(f"Time in Range by Hour (last {self.GRAPH_DAYS} days)")
+        ax.set_title(f"Time in Range by Hour")
         ax.legend(fontsize="xx-small", framealpha=.8)
         ax.set_xlabel("Hour")
         ax.set_ylabel("Percentage (%)")
@@ -527,24 +529,60 @@ class PDFReportCreator(ReportCreator):
         self.pdf.savefig(fig)
 
     def plot_lows_report(self):
-        """Plot a page with information on low blood sugars"""
+        """plot a page with information on low blood sugars"""
         fig = plt.figure(figsize=self.PAGE_SIZE)
-        ax = fig.add_subplot(1, 1, 1)
+        plt.subplot2grid((2, 1), (0, 0))
 
+        plt.text(0, 1, "Hypoglycemia-Related Statistics", ha="left", va="top",
+                 fontsize=28)
+        low_count = self.retrieve("low_bg_count")
+        sizes = [self.retrieve("time_above_range"),
+                 self.retrieve("time_below_range"),
+                 self.retrieve("time_in_range")]
+        total = sum(sizes)
+        mean_daily_low_rate = self.retrieve("mean_daily_low_rate")
+        plt.text(
+            0, 0.7,
+            f"Hypoglycemia episodes: {low_count}",
+            ha="left", va="top")
+        plt.text(
+            0, 0.6,
+            f"Mean daily hypoglycemia rate: {100*mean_daily_low_rate:.2f}%",
+            ha="left", va="top")
+
+        very_low_count = self.retrieve("very_low_bg_count")
+        very_low_rate = 100*self.retrieve("very_low_bg_rate")
+
+        plt.text(
+            0, 0.5,
+            (f"Very low hypoglycemia episodes (below 55): {very_low_count}"
+             + f" ({very_low_rate:.2f}% of all entries)"),
+            ha="left", va="top"
+        )
+
+        plt.axis("off")
+
+        plt.text(.5, 0,
+                 f"Hypoglycemia Distribution",
+                 ha="center", va="bottom", fontsize=16)
+
+        ax = plt.subplot2grid((2, 1), (1, 0), aspect="auto")
+        # ax = fig.add_subplot(1, 1, 1)
         distributions = self.retrieve("low_bg_distributions", {})
 
         labels = [f"{a}-{b}" for a, b in distributions]
         ax.set_xticks(range(len(labels)), labels)
         mn, mx = min(distributions.values()), max(distributions.values())
-        ax.set_yticks(range(mn, mx+1, max(1, (mn+mx)//5)))
-        ax.set_xlabel("Glucose range (mg/dL - mg/dL)")
-        ax.set_ylabel("Hypoglycemia count")
+        ax.set_ylim(bottom=0, top=mx+20)
+        ax.set_yticks(range(mn, mx+20, max(1, (mn+mx+20)//5)))
+        ax.set_xlabel("Glucose Range (mg/dl - mg/dl)")
+        ax.set_ylabel("Hypoglycemia Count")
         for i, ((a, b), count) in enumerate(distributions.items()):
             ax.bar(i, count, color="tab:blue", label=count)
             if count != 0:
                 ax.text(i, count, count, ha="center", va="bottom",
-                        fontsize=14)
-        ax.set_title(f"Hypoglycemia Distribution (last {self.GRAPH_DAYS} days)")
+                        fontsize=10)
+        ax.tick_params(axis='x', which='major', labelsize=8)
         self.pdf.savefig(fig)
 
     def create_report(self, target: BinaryIO):
@@ -562,11 +600,12 @@ class PDFReportCreator(ReportCreator):
             self.save_tir_by_hour()
             self.save_low_counts()
             self.save_mean_daily_low_rate()
+            self.save_very_low_count_and_rate()
 
             self.write_statistics_page(show_hba1c=(days >= 90))
+            self.plot_lows_report()
             self.plot_glucose_by_hour_graph()
             self.plot_tir_by_hour_graph()
-            self.plot_lows_report()
 
         # Plot entries for the last 14 days
         self.reset_df(14)
