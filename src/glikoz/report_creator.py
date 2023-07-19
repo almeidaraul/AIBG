@@ -205,7 +205,8 @@ class ReportCreator:
                 glucose = group["glucose"].dropna()
                 total = glucose.count()
                 low = (glucose < threshold).sum()
-                daily_low_rate_sum += low/total
+                if total > 0:
+                    daily_low_rate_sum += low/total
                 daily_low_rate_count += 1
             mean_daily_low_rate = daily_low_rate_sum / daily_low_rate_count
         self.store("mean_daily_low_rate", mean_daily_low_rate)
