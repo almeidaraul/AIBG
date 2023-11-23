@@ -148,11 +148,13 @@ class ReportCreator:
             glucose = self.df_handler.df["glucose"].dropna()
             groupby_param = self.df_handler.df["date"].dt.hour
             time_above_range_by_hour_count = glucose[glucose >= upper_bound
-                ].groupby(groupby_param).count()
+                                                     ].groupby(groupby_param
+                                                               ).count()
             for hour, count in time_above_range_by_hour_count.iteritems():
                 time_above_range_by_hour[hour] = count
             time_below_range_by_hour_count = glucose[glucose < lower_bound
-                ].groupby(groupby_param).count()
+                                                     ].groupby(groupby_param
+                                                               ).count()
             for hour, count in time_below_range_by_hour_count.iteritems():
                 time_below_range_by_hour[hour] = count
             time_in_range_by_hour_count = glucose[
@@ -306,10 +308,9 @@ class PDFReportCreator(ReportCreator):
         fig = plt.figure(figsize=self.PAGE_SIZE)
         plt.subplot2grid((2, 1), (0, 0))
 
-        plt.text(0, 1, f"Report for the last {self.GRAPH_DAYS} days", ha="left", va="top",
-                 fontsize=34)
-        plt.text(0, .7, f"Statistics", ha="left", va="top",
-                 fontsize=28)
+        plt.text(0, 1, f"Report for the last {self.GRAPH_DAYS} days",
+                 ha="left", va="top", fontsize=34)
+        plt.text(0, .7, "Statistics", ha="left", va="top", fontsize=28)
         if show_hba1c:
             hba1c_value = self.retrieve("hba1c")
             if hba1c_value is None:
@@ -317,7 +318,7 @@ class PDFReportCreator(ReportCreator):
             else:
                 hba1c_as_str = f"{hba1c_value:.2f}"
             plt.text(0, 0.5, f"HbA1c (last 3 months): {hba1c_as_str}%",
-                    ha="left", va="top")
+                     ha="left", va="top")
         entry_count = self.retrieve("entry_count")
         mean_daily_entry_count = self.retrieve("mean_daily_entry_count")
         plt.text(
@@ -338,8 +339,7 @@ class PDFReportCreator(ReportCreator):
         plt.axis("off")
 
         # time in range pie chart
-        plt.text(.5, 0, f"Time in Range",
-                 ha="center", va="bottom", fontsize=16)
+        plt.text(.5, 0, "Time in Range", ha="center", va="bottom", fontsize=16)
 
         plt.subplot2grid((2, 1), (1, 0), aspect="equal")
 
@@ -372,7 +372,7 @@ class PDFReportCreator(ReportCreator):
         ax.errorbar(hour, glucose, yerr=[mn_err, mx_err], fmt="-o",
                     capsize=3, elinewidth=2, capthick=2, color="royalblue",
                     ecolor="slategrey")
-        ax.set_title(f"Mean Glucose by Hour*")
+        ax.set_title("Mean Glucose by Hour*")
         ax.text(-.15, -.13, "*Error bars indicate maximum and minimum values",
                 transform=ax.transAxes, ha="left", va="bottom")
         ax.set_xlabel("Hour")
@@ -390,41 +390,6 @@ class PDFReportCreator(ReportCreator):
         ax.set_yticks(glucose_ticks)
         for t in ax.get_yticks():
             ax.axhline(t, color="gray", linestyle="--", linewidth=.5)
-
-        self.pdf.savefig(fig)
-
-    def write_entries_table(self, title, data):
-        """Plot the table for a day in the entries DataFrame"""
-        columns_display_names = {
-            "date": "Date",
-            "glucose": "Glucose (mg/dL)",
-            "bolus_insulin": "Bolus (iu)",
-            "correction_insulin": "Correction (iu)",
-            "basal_insulin": "Basal (iu)",
-            "carbs": "Carbohydrates (g)",
-        }
-        columns = list(map(lambda x: columns_display_names.get(x),
-                           self.retrieve("entries_dataframe").keys()))
-        colWidths = [.2, .16, .16, .16, .16, .16]
-
-        fig = plt.figure(figsize=self.PAGE_SIZE)
-        ax = fig.add_subplot(1, 1, 1)
-
-        table = ax.table(cellText=data, colLabels=columns, loc="center",
-                         fontsize=16, colWidths=colWidths)
-        table.scale(1, 2)
-        table.auto_set_font_size()
-        ax.axis("off")
-
-        for i, c in enumerate(columns):
-            ha = "left" if i == 0 else "center"
-            ax.annotate(
-                xy=(sum(colWidths[:i]), len(data)),
-                text=c,
-                ha=ha,
-                va="bottom",
-                weight="bold"
-            )
 
         self.pdf.savefig(fig)
 
@@ -466,13 +431,55 @@ class PDFReportCreator(ReportCreator):
 
         self.pdf.savefig(fig)
 
-    def report_dataframe_day(self, title, data):
-        """Plot a single day for the entries DataFrame"""
-        self.write_entries_table(title, data)
-        # self.plot_daily_glucose_graph(data)
+    def write_entries_table(self, data):
+        """Plot the table for a day in the entries DataFrame"""
+        columns_display_names = {
+            "date": "Date",
+            "glucose": "Glucose (mg/dL)",
+            "bolus_insulin": "Bolus (iu)",
+            "correction_insulin": "Correction (iu)",
+            "basal_insulin": "Basal (iu)",
+            "carbs": "Carbohydrates (g)",
+            "bolus_insulin": "Bolus (iu)",
+            "correction_insulin": "Correction (iu)",
+            "basal_insulin": "Basal (iu)",
+            "carbs": "Carbohydrates (g)",
+        }
+        columns = list(map(lambda x: columns_display_names.get(x),
+                           self.retrieve("entries_dataframe").keys()))
+        colWidths = [.2, .16, .16, .16, .16, .16]
+
+        fig = plt.figure(figsize=self.PAGE_SIZE)
+        ax = fig.add_subplot(1, 1, 1)
+
+        table = ax.table(cellText=data, colLabels=columns, loc="center",
+                         fontsize=16, colWidths=colWidths)
+        table.scale(1, 2)
+        table.auto_set_font_size()
+        ax.axis("off")
+
+        for i, c in enumerate(columns):
+            ha = "left" if i == 0 else "center"
+            ax.annotate(
+                xy=(sum(colWidths[:i]), len(data)),
+                text=c,
+                ha=ha,
+                va="bottom",
+                weight="bold"
+            )
+
+        self.pdf.savefig(fig)
 
     def write_entries_dataframe(self):
         """Plot the entries DataFrame"""
+        # start page: "entries in the last 15 days"
+        fig = plt.figure(figsize=self.PAGE_SIZE)
+        plt.subplot2grid((1, 1), (0, 0))
+        plt.text(0, 1, "Entries in the last 15 days", fontsize=34)
+        plt.axis("off")
+        self.pdf.savefig(fig)
+
+        # find index intervals corresponding to each day
         entries_nparray = np.array(self.retrieve("entries_dataframe"))
         if len(entries_nparray) == 0:
             return None
@@ -487,7 +494,7 @@ class PDFReportCreator(ReportCreator):
                 curr_start = i
         intervals.append((curr_start, len(entries_nparray)-1))
         for a, b in intervals:
-            self.report_dataframe_day("TITULO", entries_nparray[a:b+1])
+            self.write_entries_table(entries_nparray[a:b+1])
 
     def plot_tir_by_hour_graph(self):
         """plot a tir by hour line graph"""
@@ -508,14 +515,14 @@ class PDFReportCreator(ReportCreator):
                 below_range[i] /= total[i]
 
         width = .7
-        below_range_bar = ax.bar(hour, below_range, width, label="below range",
-                                 bottom=np.zeros(24), color="tab:blue")
-        in_range_bar = ax.bar(hour, in_range, width, label="in range",
-                              bottom=below_range, color="tab:olive")
-        above_range_bar = ax.bar(hour, above_range, width, label="above range",
-                                 bottom=below_range+in_range, color="tab:red")
+        ax.bar(hour, below_range, width, label="below range",
+               bottom=np.zeros(24), color="tab:blue")
+        ax.bar(hour, in_range, width, label="in range",
+               bottom=below_range, color="tab:olive")
+        ax.bar(hour, above_range, width, label="above range",
+               bottom=below_range+in_range, color="tab:red")
 
-        ax.set_title(f"Time in Range by Hour")
+        ax.set_title("Time in Range by Hour")
         ax.legend(fontsize="xx-small", framealpha=.8)
         ax.set_xlabel("Hour")
         ax.set_ylabel("Percentage (%)")
@@ -537,10 +544,6 @@ class PDFReportCreator(ReportCreator):
         plt.text(0, 1, "Hypoglycemia-Related Statistics", ha="left", va="top",
                  fontsize=28)
         low_count = self.retrieve("low_bg_count")
-        sizes = [self.retrieve("time_above_range"),
-                 self.retrieve("time_below_range"),
-                 self.retrieve("time_in_range")]
-        total = sum(sizes)
         mean_daily_low_rate = self.retrieve("mean_daily_low_rate")
         plt.text(
             0, 0.7,
@@ -564,7 +567,7 @@ class PDFReportCreator(ReportCreator):
         plt.axis("off")
 
         plt.text(.5, 0,
-                 f"Hypoglycemia Distribution",
+                 "Hypoglycemia Distribution",
                  ha="center", va="bottom", fontsize=16)
 
         ax = plt.subplot2grid((2, 1), (1, 0), aspect="auto")
@@ -590,7 +593,7 @@ class PDFReportCreator(ReportCreator):
         """Create PDF report to be saved in target file/buffer"""
         self.pdf = backend_pdf.PdfPages(target)
 
-        for days in [15, 90, 365, 730, 1095]:
+        for days in [15]:
             self.save_hba1c()
             self.GRAPH_DAYS = days
             self.reset_df(self.GRAPH_DAYS)
@@ -604,9 +607,10 @@ class PDFReportCreator(ReportCreator):
             self.save_very_low_count_and_rate()
 
             self.write_statistics_page(show_hba1c=(days >= 90))
-            self.plot_lows_report()
-            self.plot_glucose_by_hour_graph()
+            if days <= 30:
+                self.plot_glucose_by_hour_graph()
             self.plot_tir_by_hour_graph()
+            self.plot_lows_report()
 
         # Plot entries for the last 14 days
         self.reset_df(14)
