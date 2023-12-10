@@ -612,8 +612,8 @@ class PDFReportCreator(ReportCreator):
             self.plot_tir_by_hour_graph()
             self.plot_lows_report()
 
-        # Plot entries for the last 14 days
-        self.reset_df(14)
+        # Plot entries for the last 7 days
+        self.reset_df(7)
         self.save_entries_df()
         self.write_entries_dataframe()
 

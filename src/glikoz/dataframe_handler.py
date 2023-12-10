@@ -22,6 +22,7 @@ class DiaguardCSVParser:
     - tags: list of strings that tag the entry
     - comments: string providing considerations on the recorded entry
     """
+
     def __init__(self):
         self.foods = {}
         self.entries = []
@@ -221,7 +222,7 @@ class DataFrameHandler:
         selector = any if include_any else all
         def filter_fn(row): return selector(t in row["tags"] for t in tags)
 
-        if type(tags) == str:
+        if type(tags) is str:
             tags = [tags]
 
         filter_column = self.df.apply(filter_fn, axis=1)
