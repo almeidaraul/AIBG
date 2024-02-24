@@ -1,4 +1,5 @@
 import json
+import os
 
 import datetime as dt
 import numpy as np
@@ -65,7 +66,7 @@ class ReportCreator:
             hba1c = (glucose.mean()+46.7)/28.7
         self.store("hba1c", hba1c)
 
-    def save_tir(self, lower_bound: int = 70, upper_bound: int = 180):
+    def save_tir(self, lower_bound: int = 70, upper_bound: int = 181):
         """Compute and store time in/below/above range
 
         The time in range is the number of entries in the intervals [lo, up),
@@ -138,7 +139,7 @@ class ReportCreator:
             }
         self.store("glucose_by_hour_series", glucose_by_hour_series)
 
-    def save_tir_by_hour(self, lower_bound: int = 70, upper_bound: int = 180):
+    def save_tir_by_hour(self, lower_bound: int = 70, upper_bound: int = 181):
         """Compute and store the time in range for each hour of the day"""
         time_above_range_by_hour = np.array([0]*24)
         time_below_range_by_hour = np.array([0]*24)
@@ -170,7 +171,7 @@ class ReportCreator:
             self,
             threshold: int = 70,
             distribution_indexes: list = [
-                (20, 30), (31, 40), (41, 50), (51, 60), (61, 69)]):
+                (20, 39), (40, 53), (54, 69)]):
         """
         Compute amount of low blood sugar entries and distribution of their
         values
@@ -183,6 +184,7 @@ class ReportCreator:
         will indicate how many lows are in the range [a, b].
         """
         low_count = 0
+        total = self.retrieve("entry_count")
         distributions = {idx: 0 for idx in distribution_indexes}
         if not self.df_handler.df.empty:
             glucose = self.df_handler.df["glucose"].dropna()
@@ -190,8 +192,32 @@ class ReportCreator:
             for a, b in distributions:
                 count = ((glucose >= a) & (glucose <= b)).sum()
                 distributions[(a, b)] = count
+        if total == 0:
+            total = 1
+        low_bg_rate = low_count / total
+        self.store("low_bg_rate", low_bg_rate)
         self.store("low_bg_count", low_count)
         self.store("low_bg_distributions", distributions)
+
+    def save_high_counts(self, threshold: int = 180):
+        """
+        Compute amount of high blood sugar entries and distribution of their
+        values
+
+        Arguments
+        - threshold: limit for considering an entry a high. Values > threshold
+        are considered highs
+        """
+        high_count = 0
+        total = self.retrieve("entry_count")
+        if not self.df_handler.df.empty:
+            glucose = self.df_handler.df["glucose"].dropna()
+            high_count = (glucose > threshold).sum()
+        if total == 0:
+            total = 1
+        high_bg_rate = high_count / total
+        self.store("high_bg_rate", high_bg_rate)
+        self.store("high_bg_count", high_count)
 
     def save_mean_daily_low_rate(self, threshold=70):
         """Compute and store mean daily low rate
@@ -213,15 +239,17 @@ class ReportCreator:
             mean_daily_low_rate = daily_low_rate_sum / daily_low_rate_count
         self.store("mean_daily_low_rate", mean_daily_low_rate)
 
-    def save_very_low_count_and_rate(self, threshold=55):
+    def save_very_low_count_and_rate(self, threshold=54):
         """Compute and store very low glucose count and rate"""
         very_low_count = 0
         very_low_rate = 0.
+        total = self.retrieve("entry_count")
         if not self.df_handler.df.empty:
             glucose = self.df_handler.df["glucose"].dropna()
-            total = glucose.count()
             very_low_count = (glucose < threshold).sum()
-            very_low_rate = very_low_count/total
+        if total == 0:
+            total = 1
+        very_low_rate = very_low_count/total
         self.store("very_low_bg_count", very_low_count)
         self.store("very_low_bg_rate", very_low_rate)
 
@@ -559,7 +587,7 @@ class PDFReportCreator(ReportCreator):
 
         plt.text(
             0, 0.5,
-            (f"Very low hypoglycemia episodes (below 55): {very_low_count}"
+            (f"Very low hypoglycemia episodes (below 54): {very_low_count}"
              + f" ({very_low_rate:.2f}% of all entries)"),
             ha="left", va="top"
         )
@@ -618,3 +646,307 @@ class PDFReportCreator(ReportCreator):
         self.write_entries_dataframe()
 
         self.pdf.close()
+
+
+class LaTeXReportCreator(ReportCreator):
+    """ReportCreator for LaTeX PDF files"""
+
+    def __init__(self, dataframe_handler: DataFrameHandler):
+        super().__init__(dataframe_handler)
+        self.img_counter = 0
+        self.file_prefix = "/tmp/glikoz/img"
+        os.system(f"mkdir -p {self.file_prefix}")
+
+    def write(self, *args, end="\n\n"):
+        """Write line to self.target"""
+        self.target.write(''.join(args))
+        self.target.write(end)
+
+    def write_section(self, title):
+        self.write("\\section*{", title, "}")
+
+    def write_subsection(self, title):
+        self.write("\\subsection*{", title, "}")
+
+    def write_subsubsection(self, title):
+        self.write("\\subsubsection*{", title, "}")
+
+    def break_page(self):
+        self.write("\\clearpage")
+
+    def write_header(self):
+        self.write("\\documentclass{article}",
+                   "\\usepackage{graphicx}",
+                   "\\usepackage{float}",
+                   "\\usepackage{fullpage}",
+                   "\\title{Relatório Glicêmico}",
+                   "\\author{Raul Gomes Pimentel de Almeida}",
+                   "\\date{"+dt.datetime.now().strftime("%d/%m/%Y")+"}",
+                   "\\setlength{\\parindent}{0pt}",
+                   "\\begin{document}",
+                   "\\maketitle")
+
+    def write_tail(self):
+        self.write("\\end{document}")
+
+    def get_next_img_fname(self):
+        img_fname = f"{self.file_prefix}/{self.img_counter}.png"
+        self.img_counter += 1
+        return img_fname
+
+    def write_img(self, img_fname, img_caption):
+        if len(img_caption) > 0:
+            img_caption = "\\caption{" + img_caption + "}"
+        self.write("\\begin{figure}[H]",
+                   img_caption,
+                   "\\centering\\includegraphics[width=0.6\\textwidth]{",
+                   img_fname,
+                   "}\\end{figure}")
+
+    def write_and_save_img(self, plt_obj, img_caption=''):
+        img_fname = self.get_next_img_fname()
+        plt_obj.savefig(img_fname, bbox_inches='tight')
+        self.write_img(img_fname, img_caption)
+        plt_obj.close()
+
+    def write_interval_first_page(self):
+        """Write basic information at the beginning of an interval's section"""
+        self.write_section(f"Relatório dos últimos {self.GRAPH_DAYS} dias")
+
+    def write_statistics_section(self, show_hba1c: bool = True):
+        """Write basic statistics such as Time in Range and HbA1c"""
+        self.write_subsection("Estatísticas")
+        if show_hba1c:
+            hba1c_value = self.retrieve("hba1c")
+            if hba1c_value is None:
+                hba1c_as_str = "N/A"
+            else:
+                hba1c_as_str = f"{hba1c_value:.2f}\\%"
+            self.write("\\textbf{HbA1c (últimos 3 meses):} ", hba1c_as_str)
+        entry_count = self.retrieve("entry_count")
+        mean_daily_entry_count = self.retrieve("mean_daily_entry_count")
+        self.write("\\textbf{Número de registros:} ", str(entry_count),
+                   ", \\textbf{por dia:} ", f"{mean_daily_entry_count:.2f}")
+        fast_per_day = self.retrieve("mean_daily_fast_insulin")
+        std_fast_per_day = self.retrieve("std_daily_fast_insulin")
+        self.write("\\textbf{Insulina rápida por dia:} ",
+                   f"${fast_per_day:.2f} \\pm {std_fast_per_day:.2f}$")
+        high_count = self.retrieve("high_bg_count")
+        high_rate = 100*self.retrieve("high_bg_rate")
+        self.write("\\textbf{Episódios hiperglicêmicos:} ", str(high_count),
+                   f" ({high_rate:.2f}\\% de todos os registros)")
+
+    def plot_TIR_section(self):
+        """Plot TIR pie chart and TIR by hour stacked bar chart"""
+        self.write_subsection("Tempo no Alvo")
+        sizes = [self.retrieve("time_above_range"),
+                 self.retrieve("time_below_range"),
+                 self.retrieve("time_in_range")]
+        total = sum(sizes)
+        plt.axis("off")
+
+        # time in range pie chart
+        self.write_subsubsection("Gráfico de Pizza")
+        plt.axis("off")
+        plt.subplot2grid((1, 1), (0, 0), aspect="equal")
+
+        labels = ["Above range", "Below range", "In range"]
+        if total == 0:
+            self.write("Gráfico de tempo no alvo indisponível")
+        else:
+            percentages = list(map(lambda x: f"{100*x/total:.2f}%", sizes))
+
+            colors = ["tab:red", "tab:blue", "tab:olive"]
+
+            plt.pie(sizes, labels=percentages, colors=colors)
+            plt.legend(labels, loc="center left", bbox_to_anchor=(-.25, .5))
+        self.write_and_save_img(plt, "Tempo no Alvo como um gráfico de pizza")
+
+        # tir by hour chart
+        self.write_subsubsection("Tempo no Alvo por Hora")
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+
+        hour = np.array(range(24))
+        in_range = self.retrieve("time_in_range_by_hour").astype("float64")
+        above_range = self.retrieve("time_above_range_by_hour"
+                                    ).astype("float64")
+        below_range = self.retrieve("time_below_range_by_hour"
+                                    ).astype("float64")
+        total = in_range + above_range + below_range
+        for i in range(24):
+            if total[i] > 0:
+                in_range[i] /= total[i]
+                above_range[i] /= total[i]
+                below_range[i] /= total[i]
+
+        width = .7
+        ax.bar(hour, below_range, width, label="below range",
+               bottom=np.zeros(24), color="tab:blue")
+        ax.bar(hour, in_range, width, label="in range",
+               bottom=below_range, color="tab:olive")
+        ax.bar(hour, above_range, width, label="above range",
+               bottom=below_range+in_range, color="tab:red")
+
+        ax.set_title("Time in Range by Hour")
+        ax.legend(fontsize="xx-small", framealpha=.8)
+        ax.set_xlabel("Hour")
+        ax.set_ylabel("Percentage (%)")
+
+        all_hours = list(range(1, 24)) + [0]
+        ax.set_xticks(all_hours)
+        ax.set_xticklabels(list(map(lambda h: f"{h:0=2d}", all_hours)))
+
+        ax.set_yticks(list(map(lambda x: x/10, range(11))))
+        ax.set_yticklabels(list(range(0, 110, 10)))
+
+        self.write_and_save_img(plt, "Tempo no Alvo para cada hora do dia")
+
+    def plot_glucose_by_hour_graph(self):
+        """Plot a mean glucose by hour line graph"""
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+
+        series_dict = self.retrieve("glucose_by_hour_series")
+        hour = series_dict["hour"]
+        glucose = series_dict["mean_glucose"]
+        mn_line = series_dict["min_glucose"]
+        mx_line = series_dict["max_glucose"]
+        mn_glucose = min(mn_line)
+        mx_glucose = max(mx_line)
+
+        ax.plot(hour, glucose, "-o", color="royalblue")
+        ax.fill_between(hour, mn_line, mx_line, alpha=0.2)
+        ax.set_title("Glicose Média por Hora")
+        ax.set_xlabel("Hora")
+        ax.set_ylabel("Glicose (mg/dL)")
+
+        all_hours = list(range(1, 24)) + [0]
+        ax.set_xticks(all_hours)
+        ax.set_xticklabels(list(map(lambda h: f"{h:0=2d}", all_hours)))
+        for h in all_hours:
+            ax.axvline(h, color="gray", linestyle="--", linewidth=.5)
+
+        glucose_lo = 25*(np.floor(mn_glucose/25))
+        glucose_hi = 25*(np.floor(mx_glucose/25)+1)
+        glucose_ticks = list(range(int(glucose_lo), int(glucose_hi), 25))
+        ax.set_yticks(glucose_ticks)
+        for t in ax.get_yticks():
+            ax.axhline(t, color="gray", linestyle="--", linewidth=.5)
+
+        self.write_and_save_img(plt)
+
+    def plot_tir_by_hour_graph(self):
+        """plot a tir by hour line graph"""
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+
+        hour = np.array(range(24))
+        in_range = self.retrieve("time_in_range_by_hour").astype("float64")
+        above_range = self.retrieve("time_above_range_by_hour"
+                                    ).astype("float64")
+        below_range = self.retrieve("time_below_range_by_hour"
+                                    ).astype("float64")
+        total = in_range + above_range + below_range
+        for i in range(24):
+            if total[i] > 0:
+                in_range[i] /= total[i]
+                above_range[i] /= total[i]
+                below_range[i] /= total[i]
+
+        width = .7
+        ax.bar(hour, below_range, width, label="abaixo do alvo",
+               bottom=np.zeros(24), color="tab:blue")
+        ax.bar(hour, in_range, width, label="no alvo",
+               bottom=below_range, color="tab:olive")
+        ax.bar(hour, above_range, width, label="acima do alvo",
+               bottom=below_range+in_range, color="tab:red")
+
+        ax.set_title("Tempo no Alvo por Hora")
+        ax.legend(fontsize="xx-small", framealpha=.8)
+        ax.set_xlabel("Hora")
+        ax.set_ylabel("Porcentagem (%)")
+
+        all_hours = list(range(1, 24)) + [0]
+        ax.set_xticks(all_hours)
+        ax.set_xticklabels(list(map(lambda h: f"{h:0=2d}", all_hours)))
+
+        ax.set_yticks(list(map(lambda x: x/10, range(11))))
+        ax.set_yticklabels(list(range(0, 110, 10)))
+
+        self.write_and_save_img(plt)
+
+    def write_lows_section(self):
+        """plot a page with information on low blood sugars"""
+        plt.figure()
+        plt.subplot2grid((2, 1), (0, 0))
+
+        self.write_subsection("Estatísticas relacionadas a Hipoglicemias")
+        low_count = self.retrieve("low_bg_count")
+        low_rate = 100*self.retrieve("low_bg_rate")
+        self.write("\\textbf{Episódios hipoglicêmicos:} ", str(low_count),
+                   f" ({low_rate:.2f}\\% de todos os registros)")
+
+        very_low_count = self.retrieve("very_low_bg_count")
+        very_low_rate = 100*self.retrieve("very_low_bg_rate")
+
+        self.write("\\textbf{Hipoglicemias graves (abaixo de 54 mg/dL):}",
+                   f" {very_low_count} ({very_low_rate:.2f}\\%",
+                   " de todos os registros)")
+
+        plt.axis("off")
+
+        self.write_subsubsection("Gráficos")
+
+        ax = plt.subplot2grid((1, 1), (0, 0), aspect="auto")
+        # ax = fig.add_subplot(1, 1, 1)
+        distributions = self.retrieve("low_bg_distributions", {})
+
+        labels = [f"{a}-{b}" for a, b in distributions]
+        ax.set_xticks(range(len(labels)), labels)
+        mn, mx = min(distributions.values()), max(distributions.values())
+        ax.set_ylim(bottom=0, top=mx+20)
+        ax.set_yticks(range(mn, mx+20, max(1, (mn+mx+20)//5)))
+        ax.set_xlabel("Faixa de Glicose (mg/dl - mg/dl)")
+        ax.set_ylabel("Número de Hipoglicemias")
+        ax.set_title("Distribuição de Hipoglicemias")
+        for i, ((a, b), count) in enumerate(distributions.items()):
+            ax.bar(i, count, color="tab:blue", label=count)
+            if count != 0:
+                ax.text(i, count, count, ha="center", va="bottom",
+                        fontsize=10)
+        ax.tick_params(axis='x', which='major', labelsize=8)
+        self.write_and_save_img(plt)
+
+    def write_graphs_section(self):
+        self.write_subsection("Gráficos")
+        self.plot_glucose_by_hour_graph()
+        self.plot_tir_by_hour_graph()
+
+    def create_report(self, target: TextIO):
+        """Create LaTeX report to be saved in target file/buffer"""
+        self.target = target
+        self.write_header()
+
+        for days in [330]:
+            self.break_page()
+            self.write_section(f"Últimos {days} dias")
+            self.save_hba1c()
+            self.GRAPH_DAYS = days
+            self.reset_df(self.GRAPH_DAYS)
+            self.save_entry_count()
+            self.save_tir()
+            self.save_fast_insulin_use()
+            self.save_mean_glucose_by_hour()
+            self.save_tir_by_hour()
+            self.save_low_counts()
+            self.save_high_counts()
+            self.save_mean_daily_low_rate()
+            self.save_very_low_count_and_rate()
+
+            self.write_statistics_section(show_hba1c=True)
+            self.write_graphs_section()
+            self.break_page()
+            self.write_lows_section()
+
+        self.write_tail()

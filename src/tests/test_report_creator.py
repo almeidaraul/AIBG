@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
+import os
 from glikoz.report_creator import (ReportCreator, PDFReportCreator,
-                                   JSONReportCreator)
+                                   JSONReportCreator, LaTeXReportCreator)
 
 
 class TestReportCreator:
@@ -269,3 +270,23 @@ class TestPDFReportCreator:
         report_creator.fill_report()
         report_creator.create_report(target=binaryIO_buffer)
         assert len(binaryIO_buffer.getbuffer()) > 0
+
+
+class TestLaTeXReportCreator:
+    def test_create_report_with_random_dataframe_handler(
+            self, random_dataframe_handler):
+        report_creator = LaTeXReportCreator(random_dataframe_handler)
+        report_creator.fill_report()
+        os.system("echo > tmp.tex")
+        report_creator.create_report(target="tmp.tex")
+        assert not os.system("pdflatex tmp.tex")
+        os.system("rm tmp_report_test*")
+
+    def test_create_report_with_empty_dataframe_handler(
+            self, empty_dataframe_handler):
+        report_creator = LaTeXReportCreator(empty_dataframe_handler)
+        report_creator.fill_report()
+        os.system("echo > tmp.tex")
+        report_creator.create_report(target="tmp.tex")
+        assert not os.system("pdflatex tmp.tex")
+        os.system("rm tmp_report_test*")

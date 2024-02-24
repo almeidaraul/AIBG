@@ -1,6 +1,7 @@
 import sys
 import argparse
 import glikoz
+import os
 
 
 def get_args():
@@ -8,7 +9,7 @@ def get_args():
                                      description="Report over diaguard CSV")
 
     parser.add_argument("--format", type=str, help="Report format",
-                        required=True, choices=["json", "raw", "pdf"])
+                        required=True, choices=["json", "raw", "pdf", "latex"])
     parser.add_argument("--verbose", action="store_true", help="Verbose")
 
     return parser.parse_args()
@@ -23,14 +24,21 @@ def get_report(args=None):
     df_handler = glikoz.DataFrameHandler(df)
 
     if args.format == "json":
-        output = open("output.json", "w")
+        output_name, write_mode = "output.json", "w"
         reporter = glikoz.JSONReportCreator(df_handler)
     elif args.format == "pdf":
-        output = open("output.pdf", "wb")
+        output_name, write_mode = "output.pdf", "wb"
         reporter = glikoz.PDFReportCreator(df_handler)
+    elif args.format == "latex":
+        output_name, write_mode = "output.tex", "w"
+        reporter = glikoz.LaTeXReportCreator(df_handler)
 
     reporter.fill_report()
-    reporter.create_report(output)
+    with open(output_name, write_mode) as output:
+        reporter.create_report(output)
+
+    if args.format == "latex":
+        os.system("pdflatex output.tex && pdflatex output.tex")
 
 
 if __name__ == "__main__":
